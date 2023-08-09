@@ -11,6 +11,8 @@ COMMENT ON TABLE gdmmm.table_all IS 'This is a comment for the table.';
 
 COMMENT ON COLUMN gdmmm.table_all.a IS 'This is a comment for the column.';
 
+COMMENT ON COLUMN gdmmm.table_all.b IS 'This is a comment for the column.';
+
 CREATE INDEX ON gdmmm.table_all (c);
 
 CREATE TABLE gdmmm.table_all_child (

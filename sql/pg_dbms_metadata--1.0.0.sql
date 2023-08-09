@@ -115,11 +115,13 @@ BEGIN
             attnum) a INTO l_table_def;
     -- Get comments on the Table if any
     SELECT
-        'COMMENT ON TABLE ' || p_schema || '.' || p_table || ' IS TEXTVALUE0;' INTO l_tab_comments;
+        'COMMENT ON TABLE ' || p_schema || '.' || p_table || ' IS '''|| obj_description(l_oid) || ''';' INTO l_tab_comments
+    FROM pg_class
+    WHERE relkind = 'r';
     -- Get comments on the columns of the Table if any
     FOR l_col_rec IN (
         SELECT
-            'COMMENT ON COLUMN ' || p_schema || '.' || p_table || '.' || attname || ' IS TEXTVALUE1;'
+            'COMMENT ON COLUMN ' || p_schema || '.' || p_table || '.' || attname || ' IS '''|| pg_catalog.col_description(l_oid, attnum) || ''';'
         FROM
             pg_catalog.pg_attribute
         WHERE
