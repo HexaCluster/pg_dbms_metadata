@@ -1,0 +1,30 @@
+                                                 get_dependent_ddl                                                  
+--------------------------------------------------------------------------------------------------------------------
+ CREATE SEQUENCE gdmmm.table_all_a_seq START WITH 1 INCREMENT BY 1 MINVALUE 1 MAXVALUE 2147483647 CACHE 1 NO CYCLE;+
+                                                                                                                   +
+ 
+(1 row)
+
+                                        get_dependent_ddl                                        
+-------------------------------------------------------------------------------------------------
+ CREATE INDEX table_all_c_idx ON gdmmm.table_all USING btree (c) TABLESPACE :"TABLESPACE_INDEX";+
+ 
+(1 row)
+
+                                                   get_dependent_ddl                                                   
+-----------------------------------------------------------------------------------------------------------------------
+ -- Constraints                                                                                                       +
+ ALTER TABLE gdmmm.table_all ADD CONSTRAINT table_all_pkey PRIMARY KEY (a) USING INDEX TABLESPACE :"TABLESPACE_INDEX";+
+ ALTER TABLE gdmmm.table_all ADD CONSTRAINT table_all_d_key UNIQUE (d) USING INDEX TABLESPACE :"TABLESPACE_INDEX";    +
+ 
+(1 row)
+
+                                                                    get_dependent_ddl                                                                    
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+                                                                                                                                                        +
+                                                                                                                                                        +
+ -- Foreign Key Constraints                                                                                                                             +
+ ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT fk_customer FOREIGN KEY (id) REFERENCES gdmmm.table_all(a) USING INDEX TABLESPACE :"TABLESPACE_INDEX";+
+ 
+(1 row)
+

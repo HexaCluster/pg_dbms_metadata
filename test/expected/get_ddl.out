@@ -1,0 +1,50 @@
+                                                                                           get_ddl                                                                                           
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ -- Table definition                                                                                                                                                                        +
+ CREATE TABLE gdmmm.table_all (a integer DEFAULT nextval('gdmmm.table_all_a_seq'::regclass) NOT NULL,b integer  NOT NULL,c character varying(20) ,d integer ) TABLESPACE :"TABLESPACE_DATA";+
+                                                                                                                                                                                            +
+ -- Table comments                                                                                                                                                                          +
+ COMMENT ON TABLE gdmmm.table_all IS TEXTVALUE0;                                                                                                                                            +
+                                                                                                                                                                                            +
+ -- Column comments                                                                                                                                                                         +
+ COMMENT ON COLUMN gdmmm.table_all.a IS TEXTVALUE1;                                                                                                                                         +
+ 
+(1 row)
+
+                    get_ddl                    
+-----------------------------------------------
+ CREATE VIEW gdmmm.gg_d AS  SELECT table_all.a+
+    FROM gdmmm.table_all;
+(1 row)
+
+                                                         get_ddl                                                         
+-------------------------------------------------------------------------------------------------------------------------
+ CREATE SEQUENCE gdmmm.attach_line START WITH 1 INCREMENT BY 1 MINVALUE 1 MAXVALUE 9223372036854775807 CACHE 1 NO CYCLE;
+(1 row)
+
+                                           get_ddl                                           
+---------------------------------------------------------------------------------------------
+ CREATE OR REPLACE FUNCTION gdmmm.merge_objects(first_val text, actual_finder gdmmm.address)+
+  RETURNS text                                                                              +
+  LANGUAGE plpgsql                                                                          +
+ AS $function$                                                                              +
+ BEGIN                                                                                      +
+     RETURN first_val || actual_finder.city;                                                +
+ END                                                                                        +
+ $function$                                                                                 +
+ 
+(1 row)
+
+                                                                get_ddl                                                                 
+----------------------------------------------------------------------------------------------------------------------------------------
+ CREATE OR REPLACE PROCEDURE gdmmm.join_entity(IN var_str text, INOUT num_low bigint, INOUT var_init text, IN mid_finder gdmmm.address)+
+  LANGUAGE plpgsql                                                                                                                     +
+ AS $procedure$                                                                                                                        +
+ BEGIN                                                                                                                                 +
+     num_low := mid_finder.pin;                                                                                                        +
+     var_init := var_str || ', ' || mid_finder.city;                                                                                   +
+ END                                                                                                                                   +
+ $procedure$                                                                                                                           +
+ 
+(1 row)
+
