@@ -68,7 +68,7 @@ BEGIN
 END
 $BODY$;
 
-CREATE OR REPLACE PROCEDURE gdmmm.join_entity (var_str text, INOUT num_low bigint, INOUT var_init text, mid_finder gdmmm.address)
+CREATE OR REPLACE PROCEDURE gdmmm.join_entity (INOUT var_str text, INOUT num_low bigint, INOUT var_init text, INOUT mid_finder gdmmm.address)
 LANGUAGE 'plpgsql'
 AS $BODY$
 BEGIN

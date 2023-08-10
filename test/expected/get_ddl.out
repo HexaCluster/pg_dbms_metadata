@@ -36,16 +36,16 @@
  
 (1 row)
 
-                                                                get_ddl                                                                 
-----------------------------------------------------------------------------------------------------------------------------------------
- CREATE OR REPLACE PROCEDURE gdmmm.join_entity(IN var_str text, INOUT num_low bigint, INOUT var_init text, IN mid_finder gdmmm.address)+
-  LANGUAGE plpgsql                                                                                                                     +
- AS $procedure$                                                                                                                        +
- BEGIN                                                                                                                                 +
-     num_low := mid_finder.pin;                                                                                                        +
-     var_init := var_str || ', ' || mid_finder.city;                                                                                   +
- END                                                                                                                                   +
- $procedure$                                                                                                                           +
+                                                                   get_ddl                                                                    
+----------------------------------------------------------------------------------------------------------------------------------------------
+ CREATE OR REPLACE PROCEDURE gdmmm.join_entity(INOUT var_str text, INOUT num_low bigint, INOUT var_init text, INOUT mid_finder gdmmm.address)+
+  LANGUAGE plpgsql                                                                                                                           +
+ AS $procedure$                                                                                                                              +
+ BEGIN                                                                                                                                       +
+     num_low := mid_finder.pin;                                                                                                              +
+     var_init := var_str || ', ' || mid_finder.city;                                                                                         +
+ END                                                                                                                                         +
+ $procedure$                                                                                                                                 +
  
 (1 row)
 
