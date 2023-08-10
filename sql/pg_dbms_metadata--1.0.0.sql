@@ -21,6 +21,8 @@ BEGIN
         l_return := dbms_metadata.get_routine_ddl (schema, name, object_type);
     WHEN 'FUNCTION' THEN
         l_return := dbms_metadata.get_routine_ddl (schema, name, object_type);
+    WHEN 'TRIGGER' THEN
+        l_return := dbms_metadata.get_trigger_ddl (schema, name);
     WHEN 'INDEX' THEN
         l_return := dbms_metadata.get_index_ddl (schema, name);
     WHEN 'CONSTRAINT' THEN
@@ -51,6 +53,8 @@ BEGIN
     WHEN 'SEQUENCE' THEN
         -- This is not there in oracle
         l_return := dbms_metadata.get_sequence_ddl_of_table (base_object_schema, base_object_name);
+    WHEN 'TRIGGER' THEN
+        l_return := dbms_metadata.get_triggers_ddl_of_table (base_object_schema, base_object_name);
     WHEN 'CONSTRAINT' THEN
         l_return := dbms_metadata.get_constraints_ddl_of_table (base_object_schema, base_object_name);
     WHEN 'INDEX' THEN
@@ -363,6 +367,37 @@ COMMENT ON FUNCTION dbms_metadata.get_indexes_ddl_of_table (text, text) IS 'This
 REVOKE ALL ON FUNCTION dbms_metadata.get_indexes_ddl_of_table FROM PUBLIC;
 
 ----
+-- DBMS_METADATA.GET_TRIGGERS_DDL_OF_TABLE
+----
+CREATE OR REPLACE FUNCTION dbms_metadata.get_triggers_ddl_of_table(schema_name text, table_name text)
+RETURNS text AS
+$$
+DECLARE
+    trigger_def text;
+    l_return text := '';
+BEGIN
+    FOR trigger_def IN
+        SELECT pg_get_triggerdef(t.oid)
+        FROM pg_trigger t
+        JOIN pg_class c ON t.tgrelid = c.oid
+        JOIN pg_namespace n ON c.relnamespace = n.oid
+        WHERE n.nspname = schema_name
+          AND c.relname = table_name
+          AND t.tgisinternal = FALSE -- Exclude system triggers
+    LOOP
+        l_return := l_return || trigger_def || E';\n\n';
+    END LOOP;
+
+    RETURN l_return;
+END;
+$$
+LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION dbms_metadata.get_triggers_ddl_of_table (text, text) IS 'This function fetches DDL of all triggers of provided table';
+
+REVOKE ALL ON FUNCTION dbms_metadata.get_triggers_ddl_of_table FROM PUBLIC;
+
+----
 -- DBMS_METADATA.GET_VIEW_DDL
 ----
 CREATE OR REPLACE FUNCTION dbms_metadata.get_view_ddl (view_schema text, view_name text)
@@ -489,3 +524,38 @@ LANGUAGE plpgsql;
 COMMENT ON FUNCTION dbms_metadata.get_constraint_ddl (text, text) IS 'This function fetches DDL of a constraint';
 
 REVOKE ALL ON FUNCTION dbms_metadata.get_constraint_ddl FROM PUBLIC;
+
+----
+-- DBMS_METADATA.GET_TRIGGER_DDL
+----
+CREATE OR REPLACE FUNCTION dbms_metadata.get_trigger_ddl(schema_name text, trigger_name text)
+RETURNS text AS
+$$
+DECLARE
+    trigger_def text;
+BEGIN
+    SELECT pg_get_triggerdef(t.oid)
+    INTO STRICT trigger_def
+    FROM pg_trigger t
+    JOIN pg_class c ON t.tgrelid = c.oid
+    JOIN pg_namespace n ON c.relnamespace = n.oid
+    WHERE t.tgname = trigger_name
+      AND n.nspname = schema_name;
+
+    RETURN trigger_def;
+-- In postgres there can be duplicate trigger names defined in one schema, as long as they belong to different tables
+-- So we need to check and error out if the trigger name is duplicated
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RAISE EXCEPTION 'Trigger with % not found in schema %', trigger_name, schema_name;
+    WHEN TOO_MANY_ROWS THEN
+        RAISE EXCEPTION 'Duplicate triggers found with name % in schema %', trigger_name, schema_name;
+    WHEN OTHERS THEN
+        RAISE EXCEPTION 'An error occurred: %', SQLERRM;
+END;
+$$
+LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION dbms_metadata.get_trigger_ddl (text, text) IS 'This function fetches DDL of a trigger';
+
+REVOKE ALL ON FUNCTION dbms_metadata.get_trigger_ddl FROM PUBLIC;

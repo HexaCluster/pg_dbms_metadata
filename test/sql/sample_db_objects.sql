@@ -43,6 +43,19 @@ SELECT
 FROM
     gdmmm.table_all;
 
+CREATE OR REPLACE FUNCTION gdmmm.edit_text()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.c = NEW.c || 'edit';
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_edit_text
+BEFORE INSERT ON gdmmm.table_all
+FOR EACH ROW
+EXECUTE FUNCTION gdmmm.edit_text();
+
 CREATE SEQUENCE IF NOT EXISTS gdmmm.attach_line
 INCREMENT 1 START 1
 MINVALUE 1
