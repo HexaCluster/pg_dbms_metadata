@@ -101,6 +101,8 @@ SELECT dbms_metadata.get_dependent_ddl('CONSTRAINT','table_all','gdmmm');
 ## [Authors](#authors)
 
 - Akhil Reddy Banappagari
+- Avinash Vallarapu
+- Gilles Darold (Reviewer)
 
 ## [License](#license)
 
