@@ -21,6 +21,10 @@ BEGIN
         l_return := dbms_metadata.get_routine_ddl (schema, name, object_type);
     WHEN 'FUNCTION' THEN
         l_return := dbms_metadata.get_routine_ddl (schema, name, object_type);
+    WHEN 'INDEX' THEN
+        l_return := dbms_metadata.get_index_ddl (schema, name);
+    WHEN 'CONSTRAINT' THEN
+        l_return := dbms_metadata.get_constraint_ddl (schema, name);
     ELSE
         -- Need to add other object types
         RAISE EXCEPTION 'Unknown type';
@@ -438,3 +442,50 @@ COMMENT ON FUNCTION dbms_metadata.get_routine_ddl (text, text, text) IS 'This fu
 
 REVOKE ALL ON FUNCTION dbms_metadata.get_routine_ddl FROM PUBLIC;
 
+----
+-- DBMS_METADATA.GET_INDEX_DDL
+----
+CREATE OR REPLACE FUNCTION dbms_metadata.get_index_ddl(schema_name text, index_name text)
+RETURNS text AS
+$$
+DECLARE
+    index_def text;
+BEGIN
+    SELECT pg_indexes.indexdef INTO index_def
+    FROM pg_indexes
+    WHERE indexname = index_name
+      AND schemaname = schema_name;
+    
+    RETURN index_def;
+END;
+$$
+LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION dbms_metadata.get_index_ddl (text, text) IS 'This function fetches DDL of an index';
+
+REVOKE ALL ON FUNCTION dbms_metadata.get_index_ddl FROM PUBLIC;
+
+----
+-- DBMS_METADATA.GET_CONSTRAINT_DDL
+----
+CREATE OR REPLACE FUNCTION dbms_metadata.get_constraint_ddl(schema_name text, constraint_name text)
+RETURNS text AS
+$$
+DECLARE
+    alter_statement text;
+BEGIN
+    SELECT format('ALTER TABLE %I.%I ADD CONSTRAINT %I %s', schema_name, cl.relname, conname, pg_catalog.pg_get_constraintdef(con.oid, TRUE))
+    INTO alter_statement
+    FROM pg_constraint con
+    JOIN pg_class cl ON con.conrelid = cl.oid
+    WHERE conname = constraint_name
+      AND connamespace = (SELECT oid FROM pg_namespace WHERE nspname = schema_name);
+
+    RETURN alter_statement;
+END;
+$$
+LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION dbms_metadata.get_constraint_ddl (text, text) IS 'This function fetches DDL of a constraint';
+
+REVOKE ALL ON FUNCTION dbms_metadata.get_constraint_ddl FROM PUBLIC;

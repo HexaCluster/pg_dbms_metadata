@@ -13,12 +13,14 @@ COMMENT ON COLUMN gdmmm.table_all.a IS 'This is a comment for the column.';
 
 COMMENT ON COLUMN gdmmm.table_all.b IS 'This is a comment for the column.';
 
-CREATE INDEX ON gdmmm.table_all (c);
+CREATE INDEX perf_index ON gdmmm.table_all (c);
 
 CREATE TABLE gdmmm.table_all_child (
     id int,
     CONSTRAINT fk_customer FOREIGN KEY (id) REFERENCES gdmmm.table_all (a)
 );
+
+ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT child_uniq UNIQUE(id);
 
 CREATE OR REPLACE FUNCTION gdmmm.double_salary ()
     RETURNS TRIGGER

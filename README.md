@@ -56,7 +56,7 @@ This is especially useful for database in DBaas cloud services. To upgrade just 
 
 ### [GET_DDL](#get_ddl)
 
-This function fetches DDL of database objects. Currently the supported object types are TABLE, VIEW, SEQUENCE, PROCEDURE, FUNCTION. For TABLE type, the function fetches a basic table DDL without constraints and indexes. DDL will include list of columns of the table, along with datatypes, DEFAULT values and NOT NULL constraints, in the order of the attnum. DDL will also include comments on table and columns if any.
+This function fetches DDL of database objects. Currently the supported object types are TABLE, VIEW, SEQUENCE, PROCEDURE, FUNCTION, INDEX, CONSTRAINT. For TABLE type, the function fetches a basic table DDL without constraints and indexes. DDL will include list of columns of the table, along with datatypes, DEFAULT values and NOT NULL constraints, in the order of the attnum. DDL will also include comments on table and columns if any.
 
 Syntax:
 ```
