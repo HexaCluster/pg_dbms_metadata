@@ -58,7 +58,6 @@ BEGIN
     WHEN 'CONSTRAINT' THEN
         l_return := dbms_metadata.get_constraints_ddl_of_table (base_object_schema, base_object_name);
     WHEN 'INDEX' THEN
-        -- This is not there in oracle
         l_return := dbms_metadata.get_indexes_ddl_of_table (base_object_schema, base_object_name);
     ELSE
         -- Need to add other object types
@@ -152,6 +151,9 @@ BEGIN
     l_return := concat(l_return, (chr(10) || chr(10) || '-- Column comments' || chr(10) || l_col_comments));
     -- Return the final Table DDL prepared with Comments on Table and Columns
     RETURN l_return;
+EXCEPTION
+    WHEN OTHERS THEN
+        RAISE EXCEPTION '%',SQLERRM;
 END;
 $$
 LANGUAGE PLPGSQL;
@@ -210,6 +212,10 @@ BEGIN
                     l_sequences := concat(l_sequences, l_seq_rec, chr(10));
                 END IF;
             END LOOP;
+    
+    IF l_sequences IS NULL THEN
+        RAISE EXCEPTION 'specified object of type SEQUENCE not found';
+    END IF;
     -- Return the CREATE SEQUENCE statements to the DDL Output
     l_return := concat(l_sequences || chr(10));
     -- Return the final Sequences DDL prepared
@@ -291,6 +297,9 @@ BEGIN
                 l_fkey := concat(l_fkey, l_fkey_rec, chr(10));
             END IF;
         END LOOP;
+    IF l_constraints IS NULL AND l_fkey IS NULL THEN
+        RAISE EXCEPTION 'specified object of type CONSTRAINT not found';
+    END IF;
     -- Start Appending all the DDLs created until now and return the final DDL output
     -- Append Constraints of Table to the Output
     l_return := concat(l_return, ('-- Constraints' || chr(10) || l_constraints));
@@ -298,6 +307,9 @@ BEGIN
     l_return := concat(l_return, (chr(10) || chr(10) || '-- Foreign Key Constraints' || chr(10) || l_fkey));
     -- Return the final DDL prepared
     RETURN l_return;
+EXCEPTION
+    WHEN OTHERS THEN
+        RAISE EXCEPTION '%',SQLERRM;
 END;
 $$
 LANGUAGE PLPGSQL;
@@ -355,9 +367,16 @@ BEGIN
                 l_indexes := concat(l_indexes, l_const_rec.pg_get_indexdef, ' TABLESPACE :"TABLESPACE_INDEX";', chr(10));
             END IF;
         END LOOP;
+    
+    IF l_indexes IS NULL THEN
+        RAISE EXCEPTION 'specified object of type INDEX not found';
+    END IF;
     l_return := l_indexes;
     -- Return the final DDL prepared
     RETURN l_return;
+EXCEPTION
+    WHEN OTHERS THEN
+        RAISE EXCEPTION '%',SQLERRM;
 END;
 $$
 LANGUAGE PLPGSQL;
@@ -387,7 +406,9 @@ BEGIN
     LOOP
         l_return := l_return || trigger_def || E';\n\n';
     END LOOP;
-
+    IF l_return = '' THEN
+        RAISE EXCEPTION 'specified object of type TRIGGER not found';
+    END IF;
     RETURN l_return;
 END;
 $$
@@ -407,8 +428,11 @@ DECLARE
     l_return text;
 BEGIN
     SELECT
-        'CREATE VIEW ' || quote_ident(view_schema) || '.' || quote_ident(view_name) || ' AS ' || pg_get_viewdef(quote_ident(view_schema) || '.' || quote_ident(view_name)) INTO l_return;
+        'CREATE VIEW ' || quote_ident(view_schema) || '.' || quote_ident(view_name) || ' AS ' || pg_get_viewdef(quote_ident(view_schema) || '.' || quote_ident(view_name)) INTO STRICT l_return;
     RETURN l_return;
+EXCEPTION
+    WHEN OTHERS THEN
+        RAISE EXCEPTION 'An error occurred: %', SQLERRM;
 END;
 $$
 LANGUAGE plpgsql;
@@ -431,13 +455,18 @@ BEGIN
             'CYCLE'
         ELSE
             'NO CYCLE'
-        END || ';' INTO l_return
+        END || ';' INTO STRICT l_return
     FROM
         pg_sequences
     WHERE
         schemaname = p_schema
         AND sequencename = p_sequence;
     RETURN l_return;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RAISE EXCEPTION 'Sequence with name % not found in schema %', p_sequence, p_schema;
+    WHEN OTHERS THEN
+        RAISE EXCEPTION 'An error occurred: %', SQLERRM;
 END;
 $$
 LANGUAGE PLPGSQL;
@@ -454,21 +483,28 @@ CREATE OR REPLACE FUNCTION dbms_metadata.get_routine_ddl (schema_name text, rout
     AS $$
 DECLARE
     routine_code text;
+    routine_type_flag text;
 BEGIN
     CASE WHEN routine_type = 'PROCEDURE' THEN
-        routine_type = 'p';
+        routine_type_flag = 'p';
     WHEN routine_type = 'FUNCTION' THEN
-        routine_type = 'f';
+        routine_type_flag = 'f';
     END CASE;
     SELECT
-        pg_get_functiondef(p.oid) INTO routine_code
+        pg_get_functiondef(p.oid) INTO STRICT routine_code
     FROM
         pg_proc p
         JOIN pg_namespace n ON p.pronamespace = n.oid
     WHERE
         n.nspname = schema_name
         AND p.proname = routine_name
-        AND p.prokind = routine_type; RETURN routine_code;
+        AND p.prokind = routine_type_flag; 
+    RETURN routine_code;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RAISE EXCEPTION '% with name % not found in schema %',routine_type, routine_name, schema_name;
+    WHEN OTHERS THEN
+        RAISE EXCEPTION 'An error occurred: %', SQLERRM;
 END;
 $$
 LANGUAGE plpgsql;
@@ -486,12 +522,17 @@ $$
 DECLARE
     index_def text;
 BEGIN
-    SELECT pg_indexes.indexdef INTO index_def
+    SELECT pg_indexes.indexdef INTO STRICT index_def
     FROM pg_indexes
     WHERE indexname = index_name
       AND schemaname = schema_name;
     
     RETURN index_def;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RAISE EXCEPTION 'Index with name % not found in schema %',index_name, schema_name;
+    WHEN OTHERS THEN
+        RAISE EXCEPTION 'An error occurred: %', SQLERRM;
 END;
 $$
 LANGUAGE plpgsql;
@@ -510,13 +551,18 @@ DECLARE
     alter_statement text;
 BEGIN
     SELECT format('ALTER TABLE %I.%I ADD CONSTRAINT %I %s', schema_name, cl.relname, conname, pg_catalog.pg_get_constraintdef(con.oid, TRUE))
-    INTO alter_statement
+    INTO STRICT alter_statement
     FROM pg_constraint con
     JOIN pg_class cl ON con.conrelid = cl.oid
     WHERE conname = constraint_name
       AND connamespace = (SELECT oid FROM pg_namespace WHERE nspname = schema_name);
 
     RETURN alter_statement;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RAISE EXCEPTION 'Constraint with name % not found in schema %',constraint_name, schema_name;
+    WHEN OTHERS THEN
+        RAISE EXCEPTION 'An error occurred: %', SQLERRM;
 END;
 $$
 LANGUAGE plpgsql;
@@ -547,7 +593,7 @@ BEGIN
 -- So we need to check and error out if the trigger name is duplicated
 EXCEPTION
     WHEN NO_DATA_FOUND THEN
-        RAISE EXCEPTION 'Trigger with % not found in schema %', trigger_name, schema_name;
+        RAISE EXCEPTION 'Trigger with name % not found in schema %', trigger_name, schema_name;
     WHEN TOO_MANY_ROWS THEN
         RAISE EXCEPTION 'Duplicate triggers found with name % in schema %', trigger_name, schema_name;
     WHEN OTHERS THEN
