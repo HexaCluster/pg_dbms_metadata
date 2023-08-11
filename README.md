@@ -1,6 +1,6 @@
 # pg_dbms_metadata
 
-PostgreSQL extension to fetch DDL of database objects in a way compatible to Oracle DBMS_METADATA package.
+PostgreSQL extension to extract DDL of database objects in a way compatible to Oracle DBMS_METADATA package.
 
 Information about the Oracle DBMS_metadata package can be found [here](https://docs.oracle.com/en/database/oracle/oracle-database/19/arpls/DBMS_METADATA.html)
 
@@ -15,10 +15,10 @@ Information about the Oracle DBMS_metadata package can be found [here](https://d
 
 ## [Description](#description)
 
-This PostgreSQL extension provide compatibility with the DBMS_METADATA Oracle package's API to fetch DDL. The following stored procedures are implemented:
+This PostgreSQL extension provide compatibility with the DBMS_METADATA Oracle package's API to extract DDL. This extension only supports DDL extraction through GET_xxx functions. Support to FETCH_xxx functions and XML support is not added. The following stored procedures are implemented:
 
-* `GET_DDL()` Fetches DDL of specified object.  
-* `GET_DEPENDENT_DDL()` Fetches DDL of all dependent objects of specified type for a specified base object.
+* `GET_DDL()` Extracts DDL of specified object.  
+* `GET_DEPENDENT_DDL()` Extracts DDL of all dependent objects of specified type for a specified base object.
 
 ## [Installation](#installation)
 
@@ -56,7 +56,7 @@ This is especially useful for database in DBaas cloud services. To upgrade just 
 
 ### [GET_DDL](#get_ddl)
 
-This function fetches DDL of database objects. Currently the supported object types are TABLE, VIEW, SEQUENCE, PROCEDURE, FUNCTION, INDEX, CONSTRAINT. For TABLE type, the function fetches a basic table DDL without constraints and indexes. DDL will include list of columns of the table, along with datatypes, DEFAULT values and NOT NULL constraints, in the order of the attnum. DDL will also include comments on table and columns if any.
+This function extracts DDL of database objects. Currently the supported object types are TABLE, VIEW, SEQUENCE, PROCEDURE, FUNCTION, INDEX, CONSTRAINT. For TABLE type, the function extracts a basic table DDL without constraints and indexes. DDL will include list of columns of the table, along with datatypes, DEFAULT values and NOT NULL constraints, in the order of the attnum. DDL will also include comments on table and columns if any.
 
 Syntax:
 ```
@@ -78,7 +78,7 @@ SELECT dbms_metadata.get_ddl('TABLE','table_all','gdmmm');
 
 ### [GET_DEPENDENT_DDL](#get_dependent_ddl)
 
-This function fetches DDL of all dependent objects of specified object type for a specified base object. Currently the supported dependent object types are SEQUENCE, CONSTRAINT, INDEX.
+This function extracts DDL of all dependent objects of specified object type for a specified base object. Currently the supported dependent object types are SEQUENCE, CONSTRAINT, INDEX.
 
 Syntax:
 ```
