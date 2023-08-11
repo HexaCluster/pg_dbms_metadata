@@ -49,18 +49,18 @@
  
 (1 row)
 
-                          get_ddl                           
-------------------------------------------------------------
- CREATE INDEX perf_index ON gdmmm.table_all USING btree (c)
+                           get_ddl                           
+-------------------------------------------------------------
+ CREATE INDEX perf_index ON gdmmm.table_all USING btree (c);
 (1 row)
 
-                                 get_ddl                                 
--------------------------------------------------------------------------
- ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT child_uniq UNIQUE (id)
+                                 get_ddl                                  
+--------------------------------------------------------------------------
+ ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT child_uniq UNIQUE (id);
 (1 row)
 
-                                                          get_ddl                                                          
----------------------------------------------------------------------------------------------------------------------------
- CREATE TRIGGER trigger_double_salary BEFORE INSERT ON gdmmm.table_all FOR EACH ROW EXECUTE FUNCTION gdmmm.double_salary()
+                                                          get_ddl                                                           
+----------------------------------------------------------------------------------------------------------------------------
+ CREATE TRIGGER trigger_double_salary BEFORE INSERT ON gdmmm.table_all FOR EACH ROW EXECUTE FUNCTION gdmmm.double_salary();
 (1 row)
 

@@ -522,7 +522,7 @@ $$
 DECLARE
     index_def text;
 BEGIN
-    SELECT pg_indexes.indexdef INTO STRICT index_def
+    SELECT pg_indexes.indexdef || ';' INTO STRICT index_def
     FROM pg_indexes
     WHERE indexname = index_name
       AND schemaname = schema_name;
@@ -550,7 +550,7 @@ $$
 DECLARE
     alter_statement text;
 BEGIN
-    SELECT format('ALTER TABLE %I.%I ADD CONSTRAINT %I %s', schema_name, cl.relname, conname, pg_catalog.pg_get_constraintdef(con.oid, TRUE))
+    SELECT format('ALTER TABLE %I.%I ADD CONSTRAINT %I %s;', schema_name, cl.relname, conname, pg_catalog.pg_get_constraintdef(con.oid, TRUE))
     INTO STRICT alter_statement
     FROM pg_constraint con
     JOIN pg_class cl ON con.conrelid = cl.oid
@@ -580,7 +580,7 @@ $$
 DECLARE
     trigger_def text;
 BEGIN
-    SELECT pg_get_triggerdef(t.oid)
+    SELECT pg_get_triggerdef(t.oid) || ';'
     INTO STRICT trigger_def
     FROM pg_trigger t
     JOIN pg_class c ON t.tgrelid = c.oid
