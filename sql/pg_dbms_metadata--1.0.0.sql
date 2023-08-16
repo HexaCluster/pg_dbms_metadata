@@ -85,6 +85,8 @@ DECLARE
     l_col_rec text;
     l_col_comments text;
     l_return text;
+    l_partitioning_type text;
+    l_partitioned_columns text;
 BEGIN
     -- Getting the OID of the table
     -- The following OID will be used to get the definition from sequences
@@ -120,6 +122,28 @@ BEGIN
             AND c.nspname = p_schema
         ORDER BY
             attnum) a INTO l_table_def;
+
+    -- Get partitioning info of table
+    SELECT
+        CASE
+            WHEN pt.partstrat = 'r' THEN 'RANGE'
+            WHEN pt.partstrat = 'l' THEN 'LIST'
+            WHEN pt.partstrat = 'h' THEN 'HASH'
+            ELSE null
+        END AS partitioning_type,
+        string_agg(a.attname, ', ') AS partitioned_columns
+    INTO l_partitioning_type, l_partitioned_columns
+    FROM
+        pg_class c
+    LEFT JOIN pg_partitioned_table pt ON c.oid = pt.partrelid
+    LEFT JOIN pg_attribute a ON c.oid = a.attrelid
+    WHERE
+        c.relnamespace = p_schema::regnamespace
+        AND c.relname = p_table
+        AND a.attnum = ANY(pt.partattrs)
+        AND a.attnum > 0
+    GROUP BY c.relname, pt.partstrat;
+
     -- Get comments on the Table if any
     SELECT
         'COMMENT ON TABLE ' || p_schema || '.' || p_table || ' IS '''|| obj_description(l_oid) || ''';' INTO l_tab_comments
@@ -144,7 +168,13 @@ BEGIN
             END IF;
         END LOOP;
     -- Add Table DDL with its columns and their datatypes to the Output
-    l_return := concat(l_return, '-- Table definition' || chr(10) || 'CREATE TABLE ' || p_schema || '.' || p_table || ' (' || l_table_def || ') TABLESPACE :"TABLESPACE_DATA";');
+    l_return := concat(l_return, '-- Table definition' || chr(10) || 'CREATE TABLE ' || p_schema || '.' || p_table || ' (' || l_table_def || ') TABLESPACE :"TABLESPACE_DATA"');
+    -- Add partitioning if any
+    IF l_partitioning_type IS NOT NULL THEN
+        l_return := concat(l_return, ' PARTITION BY ' || l_partitioning_type || '(' || l_partitioned_columns || ')');
+    END IF;
+    -- Add semi-colon at end
+    l_return := concat(l_return, ';');
     -- Append Comments on Table to the Output
     l_return := concat(l_return, (chr(10) || chr(10) || '-- Table comments' || chr(10) || l_tab_comments));
     -- Append Comments on Columns of Table to the Output
