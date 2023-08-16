@@ -1,0 +1,20 @@
+                                                                                           get_ddl                                                                                           
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ -- Table definition                                                                                                                                                                        +
+ CREATE TABLE gdmmm.table_all (a integer DEFAULT nextval('gdmmm.table_all_a_seq'::regclass) NOT NULL,b integer  NOT NULL,c character varying(20) ,d integer ) TABLESPACE :"TABLESPACE_DATA";+
+                                                                                                                                                                                            +
+ -- Table comments                                                                                                                                                                          +
+ COMMENT ON TABLE gdmmm.table_all IS 'This is a comment for the table.';                                                                                                                    +
+                                                                                                                                                                                            +
+ -- Column comments                                                                                                                                                                         +
+ COMMENT ON COLUMN gdmmm.table_all.a IS 'This is a comment for the column.';                                                                                                                +
+ COMMENT ON COLUMN gdmmm.table_all.b IS 'This is a comment for the column.';                                                                                                                +
+ 
+(1 row)
+
+                                                                          get_ddl                                                                           
+------------------------------------------------------------------------------------------------------------------------------------------------------------
+ -- Table definition                                                                                                                                       +
+ CREATE TABLE gdmmm.sales (sale_id integer  NOT NULL,sale_date date  NOT NULL,amount numeric ) TABLESPACE :"TABLESPACE_DATA" PARTITION BY RANGE(sale_date);
+(1 row)
+

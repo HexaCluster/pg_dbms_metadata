@@ -1,19 +1,3 @@
-                                                 get_dependent_ddl                                                  
---------------------------------------------------------------------------------------------------------------------
- CREATE SEQUENCE gdmmm.table_all_a_seq START WITH 1 INCREMENT BY 1 MINVALUE 1 MAXVALUE 2147483647 CACHE 1 NO CYCLE;+
-                                                                                                                   +
- 
-(1 row)
-
-                                                     get_dependent_ddl                                                      
-----------------------------------------------------------------------------------------------------------------------------
- CREATE TRIGGER trigger_double_salary BEFORE INSERT ON gdmmm.table_all FOR EACH ROW EXECUTE FUNCTION gdmmm.double_salary();+
-                                                                                                                           +
- CREATE TRIGGER trigger_edit_text BEFORE INSERT ON gdmmm.table_all FOR EACH ROW EXECUTE FUNCTION gdmmm.edit_text();        +
-                                                                                                                           +
- 
-(1 row)
-
                                      get_dependent_ddl                                      
 --------------------------------------------------------------------------------------------
  CREATE INDEX perf_index ON gdmmm.table_all USING btree (c) TABLESPACE :"TABLESPACE_INDEX";+

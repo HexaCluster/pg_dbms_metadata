@@ -1,0 +1,5 @@
+                                                          get_ddl                                                           
+----------------------------------------------------------------------------------------------------------------------------
+ CREATE TRIGGER trigger_double_salary BEFORE INSERT ON gdmmm.table_all FOR EACH ROW EXECUTE FUNCTION gdmmm.double_salary();
+(1 row)
+

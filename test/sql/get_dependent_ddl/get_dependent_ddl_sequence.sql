@@ -1,0 +1,1 @@
+SELECT dbms_metadata.get_dependent_ddl('SEQUENCE','table_all','gdmmm');
