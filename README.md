@@ -22,9 +22,12 @@ This PostgreSQL extension provide compatibility with the DBMS_METADATA Oracle pa
 
 ## [Installation](#installation)
 
-To be able to run this extension, your PostgreSQL version must support extensions (>= 9.1)
+To be able to run this extension, your PostgreSQL version must support extensions (>= 9.1).
 
-To install the extension execute
+1. Copy the source code from repository.
+2. set pg_config binary location in PATH environment variable
+3. Execute following command to install this extension
+
 ```
     make
     sudo make install
