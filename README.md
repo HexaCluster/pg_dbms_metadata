@@ -10,15 +10,17 @@ Information about the Oracle DBMS_metadata package can be found [here](https://d
 * [Functions](#functions)
   - [GET_DDL](#get_ddl)
   - [GET_DEPENDENT_DDL](#get_dependent_ddl)
+  - [SET_TRANSFORM_PARAM](#set_transform_param)
 * [Authors](#authors)
 * [License](#license)
 
 ## [Description](#description)
 
-This PostgreSQL extension provide compatibility with the DBMS_METADATA Oracle package's API to extract DDL. This extension only supports DDL extraction through GET_xxx functions. Support to FETCH_xxx functions and XML support is not added. The following stored procedures are implemented:
+This PostgreSQL extension provide compatibility with the DBMS_METADATA Oracle package's API to extract DDL. This extension only supports DDL extraction through GET_xxx functions. Support to FETCH_xxx functions and XML support is not added. The following functions and stored procedures are implemented:
 
-* `GET_DDL()` Extracts DDL of specified object.  
-* `GET_DEPENDENT_DDL()` Extracts DDL of all dependent objects of specified type for a specified base object.
+* `GET_DDL()` This function extracts DDL of specified object.  
+* `GET_DEPENDENT_DDL()` This function extracts DDL of all dependent objects of specified type for a specified base object.
+* `SET_TRANSFORM_PARAM()` This procedure is used to customize DDL through configuring session-level transform params. 
 
 ## [Installation](#installation)
 
@@ -32,6 +34,15 @@ To be able to run this extension, your PostgreSQL version must support extension
     make
     sudo make install
 ```
+
+4. Add `pg_dbms_metadata` to `session_preload_libraries` in `postgresql.conf`.
+```
+# add to postgresql.conf
+
+# required to load default values to pg_dbms_metadata session-level transform params when a session starts
+session_preload_libraries = 'pg_dbms_metadata'
+```
+
 Test of the extension can be done using:
 ```
     make installcheck
@@ -99,6 +110,36 @@ Parameters:
 Example:
 ```
 SELECT dbms_metadata.get_dependent_ddl('CONSTRAINT','table_all','gdmmm');
+```
+
+### [SET_TRANSFORM_PARAM](#set_transform_param)
+
+This procedure is used to configure session-level transform params, with which we can customize the DDL of objects. This only supports session-level transform params, not setting transform params through any other transform handles. GET_DDL, GET_DEPENDENT_DDL inherit these params when they invoke the DDL transform. There is a small change in the procedure signature when compared to the one of Oracle.
+
+Syntax:
+```
+dbms_metadata.set_transform_param (
+   name          IN text,
+   value         IN text);
+
+dbms_metadata.set_transform_param (
+   name          IN text,
+   value         IN boolean);
+```
+Parameters:
+
+- name: The name of the transform parameter.
+- value: The value of the transform.
+
+List of currently supported transform params
+
+| Object types          | Name          | Datatype      | Meaning       
+| --------------------- | ------------- | ------------- | -------------------------------------------------------------------------- 
+| All objects           | SQLTERMINATOR | boolean       | If TRUE, append the SQL terminator( ; ) to each DDL statement. Defaults to FALSE.  
+
+Example:
+```
+CALL dbms_metadata.set_transform_param('SQLTERMINATOR',true);
 ```
 
 ## [Authors](#authors)
