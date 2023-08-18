@@ -1,7 +1,7 @@
-                                                 get_dependent_ddl                                                  
---------------------------------------------------------------------------------------------------------------------
- CREATE SEQUENCE gdmmm.table_all_a_seq START WITH 1 INCREMENT BY 1 MINVALUE 1 MAXVALUE 2147483647 CACHE 1 NO CYCLE;+
-                                                                                                                   +
+                                                 get_dependent_ddl                                                 
+-------------------------------------------------------------------------------------------------------------------
+ CREATE SEQUENCE gdmmm.table_all_a_seq START WITH 1 INCREMENT BY 1 MINVALUE 1 MAXVALUE 2147483647 CACHE 1 NO CYCLE+
+                                                                                                                  +
  
 (1 row)
 

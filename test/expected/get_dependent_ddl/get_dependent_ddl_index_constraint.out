@@ -1,25 +1,25 @@
-                                     get_dependent_ddl                                      
---------------------------------------------------------------------------------------------
- CREATE INDEX perf_index ON gdmmm.table_all USING btree (c) TABLESPACE :"TABLESPACE_INDEX";+
+                                     get_dependent_ddl                                     
+-------------------------------------------------------------------------------------------
+ CREATE INDEX perf_index ON gdmmm.table_all USING btree (c) TABLESPACE :"TABLESPACE_INDEX"+
  
 (1 row)
 
-                                                   get_dependent_ddl                                                   
------------------------------------------------------------------------------------------------------------------------
- -- Constraints                                                                                                       +
- ALTER TABLE gdmmm.table_all ADD CONSTRAINT table_all_pkey PRIMARY KEY (a) USING INDEX TABLESPACE :"TABLESPACE_INDEX";+
- ALTER TABLE gdmmm.table_all ADD CONSTRAINT table_all_d_key UNIQUE (d) USING INDEX TABLESPACE :"TABLESPACE_INDEX";    +
+                                                  get_dependent_ddl                                                   
+----------------------------------------------------------------------------------------------------------------------
+ -- Constraints                                                                                                      +
+ ALTER TABLE gdmmm.table_all ADD CONSTRAINT table_all_pkey PRIMARY KEY (a) USING INDEX TABLESPACE :"TABLESPACE_INDEX"+
+ ALTER TABLE gdmmm.table_all ADD CONSTRAINT table_all_d_key UNIQUE (d) USING INDEX TABLESPACE :"TABLESPACE_INDEX"    +
  
 (1 row)
 
-                                                                    get_dependent_ddl                                                                    
----------------------------------------------------------------------------------------------------------------------------------------------------------
- -- Constraints                                                                                                                                         +
- ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT child_uniq UNIQUE (id) USING INDEX TABLESPACE :"TABLESPACE_INDEX";                                    +
-                                                                                                                                                        +
-                                                                                                                                                        +
- -- Foreign Key Constraints                                                                                                                             +
- ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT fk_customer FOREIGN KEY (id) REFERENCES gdmmm.table_all(a) USING INDEX TABLESPACE :"TABLESPACE_INDEX";+
+                                                                   get_dependent_ddl                                                                    
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+ -- Constraints                                                                                                                                        +
+ ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT child_uniq UNIQUE (id) USING INDEX TABLESPACE :"TABLESPACE_INDEX"                                    +
+                                                                                                                                                       +
+                                                                                                                                                       +
+ -- Foreign Key Constraints                                                                                                                            +
+ ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT fk_customer FOREIGN KEY (id) REFERENCES gdmmm.table_all(a) USING INDEX TABLESPACE :"TABLESPACE_INDEX"+
  
 (1 row)
 

@@ -1,6 +1,6 @@
                     get_ddl                    
 -----------------------------------------------
  CREATE VIEW gdmmm.gg_d AS  SELECT table_all.a+
-    FROM gdmmm.table_all;
+    FROM gdmmm.table_all
 (1 row)
 
