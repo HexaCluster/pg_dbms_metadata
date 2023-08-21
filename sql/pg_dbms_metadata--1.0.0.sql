@@ -27,6 +27,8 @@ BEGIN
         l_return := dbms_metadata.get_index_ddl (schema, name);
     WHEN 'CONSTRAINT' THEN
         l_return := dbms_metadata.get_constraint_ddl (schema, name);
+    WHEN 'REF_CONSTRAINT' THEN
+        l_return := dbms_metadata.get_ref_constraint_ddl (schema, name);
     ELSE
         -- Need to add other object types
         RAISE EXCEPTION 'Unknown type';
@@ -57,6 +59,8 @@ BEGIN
         l_return := dbms_metadata.get_triggers_ddl_of_table (base_object_schema, base_object_name);
     WHEN 'CONSTRAINT' THEN
         l_return := dbms_metadata.get_constraints_ddl_of_table (base_object_schema, base_object_name);
+    WHEN 'REF_CONSTRAINT' THEN
+        l_return := dbms_metadata.get_ref_constraints_ddl_of_table (base_object_schema, base_object_name);
     WHEN 'INDEX' THEN
         l_return := dbms_metadata.get_indexes_ddl_of_table (base_object_schema, base_object_name);
     ELSE
@@ -77,7 +81,13 @@ REVOKE ALL ON FUNCTION dbms_metadata.get_dependent_ddl FROM PUBLIC;
 ----
 CREATE OR REPLACE PROCEDURE dbms_metadata.set_transform_param(name text, value text)
     AS $$
+DECLARE
+    l_allowed_names text[] := ARRAY[];
 BEGIN
+    IF NOT name = ANY(l_allowed_names) THEN
+        RAISE EXCEPTION 'Name:% is not supported for value as text', name;
+        RETURN;
+    END IF;
     PERFORM set_config('DBMS_METADATA.' || name, value, false);
 END;
 $$ 
@@ -89,8 +99,14 @@ REVOKE ALL ON PROCEDURE dbms_metadata.set_transform_param FROM PUBLIC;
 
 CREATE OR REPLACE PROCEDURE dbms_metadata.set_transform_param(name text, value boolean)
     AS $$
+DECLARE
+    l_allowed_names text[] := ARRAY['SQLTERMINATOR', 'CONSTRAINTS', 'REF_CONSTRAINTS'];
 BEGIN
-    CALL dbms_metadata.set_transform_param(name, value::text);
+    IF NOT name = ANY(l_allowed_names) THEN
+        RAISE EXCEPTION 'Name:% is not supported for value as boolean', name;
+        RETURN;
+    END IF;
+    PERFORM set_config('DBMS_METADATA.' || name, value::text, false);
 END;
 $$ 
 LANGUAGE plpgsql;
@@ -194,20 +210,25 @@ BEGIN
                 l_col_comments := concat(l_col_comments, l_col_rec, chr(10));
             END IF;
         END LOOP;
+    
     -- Add Table DDL with its columns and their datatypes to the Output
     l_return := concat(l_return, '-- Table definition' || chr(10) || 'CREATE TABLE ' || p_schema || '.' || p_table || ' (' || l_table_def || ') TABLESPACE :"TABLESPACE_DATA"');
+    
     -- Add partitioning if any
     IF l_partitioning_type IS NOT NULL THEN
         l_return := concat(l_return, ' PARTITION BY ' || l_partitioning_type || '(' || l_partitioned_columns || ')');
     END IF;
+
     IF l_sqlterminator THEN
         -- Add semi-colon at end
         l_return := concat(l_return, ';');
     END IF;
+
     -- Append Comments on Table to the Output
     l_return := concat(l_return, (chr(10) || chr(10) || '-- Table comments' || chr(10) || l_tab_comments));
     -- Append Comments on Columns of Table to the Output
     l_return := concat(l_return, (chr(10) || chr(10) || '-- Column comments' || chr(10) || l_col_comments));
+
     -- Return the final Table DDL prepared with Comments on Table and Columns
     RETURN l_return;
 EXCEPTION
@@ -294,8 +315,10 @@ REVOKE ALL ON FUNCTION dbms_metadata.get_sequence_ddl_of_table FROM PUBLIC;
 ----
 -- DBMS_METADATA.GET_CONSTRAINTS_DDL_OF_TABLE
 ----
-CREATE OR REPLACE FUNCTION dbms_metadata.get_constraints_ddl_of_table (p_schema text, p_table text)
-    RETURNS text
+CREATE OR REPLACE FUNCTION dbms_metadata.get_constraints_ddl_of_table (
+    p_schema text, 
+    p_table text
+) RETURNS text
     AS $$
 DECLARE
     l_oid oid;
@@ -311,6 +334,7 @@ BEGIN
 
     -- Getting the OID of the table
     EXECUTE 'SELECT ''' || p_schema || '.' || p_table || '''::regclass::oid' INTO l_oid;
+    
     -- Get Constraints Definitions
     FOR l_const_rec IN (
         SELECT
@@ -346,6 +370,45 @@ BEGIN
                 l_constraints := concat(l_constraints, format('ALTER TABLE %I.%I ADD CONSTRAINT %I ', p_schema, p_table, l_const_rec.conname), l_const_rec.pg_get_constraintdef, ' USING INDEX TABLESPACE :"TABLESPACE_INDEX"', CASE l_sqlterminator WHEN TRUE THEN ';' ELSE '' END, chr(10));
             END IF;
         END LOOP;
+
+    -- Append Constraints of Table to the Output
+    l_return := concat(l_return, ('-- Constraints' || chr(10) || l_constraints));
+
+    -- Return the final DDL prepared
+    RETURN l_return;
+EXCEPTION
+    WHEN OTHERS THEN
+        RAISE EXCEPTION '%',SQLERRM;
+END;
+$$
+LANGUAGE PLPGSQL;
+
+COMMENT ON FUNCTION dbms_metadata.get_constraints_ddl_of_table (text, text) IS 'This function fetches DDL of all constraints of provided table';
+
+REVOKE ALL ON FUNCTION dbms_metadata.get_constraints_ddl_of_table FROM PUBLIC;
+
+----
+-- DBMS_METADATA.GET_REF_CONSTRAINTS_DDL_OF_TABLE
+----
+CREATE OR REPLACE FUNCTION dbms_metadata.get_ref_constraints_ddl_of_table (
+    p_schema text, 
+    p_table text
+) RETURNS text
+    AS $$
+DECLARE
+    l_oid oid;
+    l_const_rec record;
+    l_return text;
+    l_fkey_rec text;
+    l_fkey text;
+    l_sqlterminator boolean;
+BEGIN
+    -- Getting values of transform params
+    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator;
+
+    -- Getting the OID of the table
+    EXECUTE 'SELECT ''' || p_schema || '.' || p_table || '''::regclass::oid' INTO l_oid;
+    
     FOR l_fkey_rec IN (
         SELECT
             'ALTER TABLE ' || nspname || '.' || relname || ' ADD CONSTRAINT ' || conname || ' ' || pg_get_constraintdef(pg_constraint.oid) || ' USING INDEX TABLESPACE :"TABLESPACE_INDEX"' || CASE l_sqlterminator WHEN TRUE THEN ';' ELSE '' END
@@ -364,14 +427,10 @@ BEGIN
                 l_fkey := concat(l_fkey, l_fkey_rec, chr(10));
             END IF;
         END LOOP;
-    IF l_constraints IS NULL AND l_fkey IS NULL THEN
-        RAISE EXCEPTION 'specified object of type CONSTRAINT not found';
-    END IF;
-    -- Start Appending all the DDLs created until now and return the final DDL output
-    -- Append Constraints of Table to the Output
-    l_return := concat(l_return, ('-- Constraints' || chr(10) || l_constraints));
+    
     -- Append Foreign Key Constraints to the Output
     l_return := concat(l_return, (chr(10) || chr(10) || '-- Foreign Key Constraints' || chr(10) || l_fkey));
+
     -- Return the final DDL prepared
     RETURN l_return;
 EXCEPTION
@@ -381,9 +440,9 @@ END;
 $$
 LANGUAGE PLPGSQL;
 
-COMMENT ON FUNCTION dbms_metadata.get_constraints_ddl_of_table (text, text) IS 'This function fetches DDL of all constraints of provided table';
+COMMENT ON FUNCTION dbms_metadata.get_ref_constraints_ddl_of_table (text, text) IS 'This function fetches DDL of all constraints of provided table';
 
-REVOKE ALL ON FUNCTION dbms_metadata.get_constraints_ddl_of_table FROM PUBLIC;
+REVOKE ALL ON FUNCTION dbms_metadata.get_ref_constraints_ddl_of_table FROM PUBLIC;
 
 ----
 -- DBMS_METADATA.GET_INDEXES_DDL_OF_TABLE
@@ -660,7 +719,8 @@ BEGIN
     FROM pg_constraint con
     JOIN pg_class cl ON con.conrelid = cl.oid
     WHERE conname = constraint_name
-      AND connamespace = (SELECT oid FROM pg_namespace WHERE nspname = schema_name);
+        AND contype <> 'f'
+        AND connamespace = (SELECT oid FROM pg_namespace WHERE nspname = schema_name);
     
     IF l_sqlterminator THEN
         alter_statement := concat(alter_statement, ';');
@@ -678,6 +738,44 @@ LANGUAGE plpgsql;
 COMMENT ON FUNCTION dbms_metadata.get_constraint_ddl (text, text) IS 'This function fetches DDL of a constraint';
 
 REVOKE ALL ON FUNCTION dbms_metadata.get_constraint_ddl FROM PUBLIC;
+
+----
+-- DBMS_METADATA.GET_REF_CONSTRAINT_DDL
+----
+CREATE OR REPLACE FUNCTION dbms_metadata.get_ref_constraint_ddl(schema_name text, constraint_name text)
+RETURNS text AS
+$$
+DECLARE
+    alter_statement text;
+    l_sqlterminator boolean;
+BEGIN
+    -- Getting values of transform params
+    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator;
+
+    SELECT format('ALTER TABLE %I.%I ADD CONSTRAINT %I %s', schema_name, cl.relname, conname, pg_catalog.pg_get_constraintdef(con.oid, TRUE))
+    INTO STRICT alter_statement
+    FROM pg_constraint con
+    JOIN pg_class cl ON con.conrelid = cl.oid
+    WHERE conname = constraint_name
+        AND contype = 'f'
+        AND connamespace = (SELECT oid FROM pg_namespace WHERE nspname = schema_name);
+    
+    IF l_sqlterminator THEN
+        alter_statement := concat(alter_statement, ';');
+    END IF; 
+    RETURN alter_statement;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RAISE EXCEPTION 'Referential constraint with name % not found in schema %',constraint_name, schema_name;
+    WHEN OTHERS THEN
+        RAISE EXCEPTION 'An error occurred: %', SQLERRM;
+END;
+$$
+LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION dbms_metadata.get_ref_constraint_ddl (text, text) IS 'This function fetches DDL of a constraint';
+
+REVOKE ALL ON FUNCTION dbms_metadata.get_ref_constraint_ddl FROM PUBLIC;
 
 ----
 -- DBMS_METADATA.GET_TRIGGER_DDL

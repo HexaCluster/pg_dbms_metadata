@@ -12,10 +12,15 @@
  
 (1 row)
 
+                                                 get_dependent_ddl                                                  
+--------------------------------------------------------------------------------------------------------------------
+ -- Constraints                                                                                                    +
+ ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT child_uniq UNIQUE (id) USING INDEX TABLESPACE :"TABLESPACE_INDEX"+
+ 
+(1 row)
+
                                                                    get_dependent_ddl                                                                    
 --------------------------------------------------------------------------------------------------------------------------------------------------------
- -- Constraints                                                                                                                                        +
- ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT child_uniq UNIQUE (id) USING INDEX TABLESPACE :"TABLESPACE_INDEX"                                    +
                                                                                                                                                        +
                                                                                                                                                        +
  -- Foreign Key Constraints                                                                                                                            +
