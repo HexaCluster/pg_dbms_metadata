@@ -126,14 +126,19 @@ DECLARE
     l_return text;
     l_partitioning_type text;
     l_partitioned_columns text;
-    l_sqlterminator boolean;
+    l_sqlterminator_guc boolean;
+    l_constraints_guc boolean;
+    l_ref_constraints_guc boolean;
 BEGIN
     -- Getting values of transform params
-    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator;
+    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
+    SELECT current_setting('DBMS_METADATA.CONSTRAINTS')::boolean INTO l_constraints_guc;
+    SELECT current_setting('DBMS_METADATA.REF_CONSTRAINTS')::boolean INTO l_ref_constraints_guc;
 
     -- Getting the OID of the table
     -- The following OID will be used to get the definition from sequences
     EXECUTE 'SELECT ''' || p_schema || '.' || p_table || '''::regclass::oid' INTO l_oid;
+    
     -- Following SQL would get -
     -- 1. The list of columns of the Table in the order of the attnum
     -- 2. Datatypes set to the columns
@@ -166,6 +171,9 @@ BEGIN
         ORDER BY
             attnum) a INTO l_table_def;
 
+    -- Add Table DDL with its columns and their datatypes to the Output
+    l_return := concat(l_return, '-- Table definition' || chr(10) || 'CREATE TABLE ' || p_schema || '.' || p_table || ' (' || l_table_def || ') TABLESPACE :"TABLESPACE_DATA"');
+    
     -- Get partitioning info of table
     SELECT
         CASE
@@ -187,15 +195,25 @@ BEGIN
         AND a.attnum > 0
     GROUP BY c.relname, pt.partstrat;
 
+    -- Add partitioning if any
+    IF l_partitioning_type IS NOT NULL THEN
+        l_return := concat(l_return, ' PARTITION BY ' || l_partitioning_type || '(' || l_partitioned_columns || ')');
+    END IF;
+
+    IF l_sqlterminator_guc THEN
+        -- Add semi-colon at end
+        l_return := concat(l_return, ';');
+    END IF;
+
     -- Get comments on the Table if any
     SELECT
-        'COMMENT ON TABLE ' || p_schema || '.' || p_table || ' IS '''|| obj_description(l_oid) || '''' || CASE l_sqlterminator WHEN TRUE THEN ';' ELSE '' END INTO l_tab_comments
+        'COMMENT ON TABLE ' || p_schema || '.' || p_table || ' IS '''|| obj_description(l_oid) || '''' || CASE l_sqlterminator_guc WHEN TRUE THEN ';' ELSE '' END INTO l_tab_comments
     FROM pg_class
     WHERE relkind = 'r';
     -- Get comments on the columns of the Table if any
     FOR l_col_rec IN (
         SELECT
-            'COMMENT ON COLUMN ' || p_schema || '.' || p_table || '.' || attname || ' IS '''|| pg_catalog.col_description(l_oid, attnum) || '''' || CASE l_sqlterminator WHEN TRUE THEN ';' ELSE '' END
+            'COMMENT ON COLUMN ' || p_schema || '.' || p_table || '.' || attname || ' IS '''|| pg_catalog.col_description(l_oid, attnum) || '''' || CASE l_sqlterminator_guc WHEN TRUE THEN ';' ELSE '' END
         FROM
             pg_catalog.pg_attribute
         WHERE
@@ -210,24 +228,19 @@ BEGIN
                 l_col_comments := concat(l_col_comments, l_col_rec, chr(10));
             END IF;
         END LOOP;
-    
-    -- Add Table DDL with its columns and their datatypes to the Output
-    l_return := concat(l_return, '-- Table definition' || chr(10) || 'CREATE TABLE ' || p_schema || '.' || p_table || ' (' || l_table_def || ') TABLESPACE :"TABLESPACE_DATA"');
-    
-    -- Add partitioning if any
-    IF l_partitioning_type IS NOT NULL THEN
-        l_return := concat(l_return, ' PARTITION BY ' || l_partitioning_type || '(' || l_partitioned_columns || ')');
-    END IF;
-
-    IF l_sqlterminator THEN
-        -- Add semi-colon at end
-        l_return := concat(l_return, ';');
-    END IF;
 
     -- Append Comments on Table to the Output
     l_return := concat(l_return, (chr(10) || chr(10) || '-- Table comments' || chr(10) || l_tab_comments));
     -- Append Comments on Columns of Table to the Output
     l_return := concat(l_return, (chr(10) || chr(10) || '-- Column comments' || chr(10) || l_col_comments));
+
+    IF l_constraints_guc THEN
+        l_return := concat(l_return, (chr(10) || chr(10) || '-- Constraints' || chr(10) || dbms_metadata.get_constraints_ddl_of_table(p_schema, p_table)));
+    END IF;
+
+    IF l_ref_constraints_guc THEN
+        l_return := concat(l_return, (chr(10) || chr(10) || '-- Referential constraints' || chr(10) || dbms_metadata.get_ref_constraints_ddl_of_table(p_schema, p_table)));
+    END IF;
 
     -- Return the final Table DDL prepared with Comments on Table and Columns
     RETURN l_return;
@@ -252,10 +265,10 @@ DECLARE
     l_seq_rec text;
     l_sequences text;
     l_return text;
-    l_sqlterminator boolean;
+    l_sqlterminator_guc boolean;
 BEGIN
     -- Getting values of transform params
-    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator;
+    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
 
     -- Get the CREATE SEQUENCE statements
     --     for all the sequences belonging to the table
@@ -265,7 +278,7 @@ BEGIN
                 'CYCLE'
             ELSE
                 'NO CYCLE'
-            END || CASE l_sqlterminator WHEN TRUE THEN ';' ELSE '' END
+            END || CASE l_sqlterminator_guc WHEN TRUE THEN ';' ELSE '' END
         FROM
             pg_sequences
         WHERE
@@ -327,10 +340,10 @@ DECLARE
     l_return text;
     l_fkey_rec text;
     l_fkey text;
-    l_sqlterminator boolean;
+    l_sqlterminator_guc boolean;
 BEGIN
     -- Getting values of transform params
-    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator;
+    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
 
     -- Getting the OID of the table
     EXECUTE 'SELECT ''' || p_schema || '.' || p_table || '''::regclass::oid' INTO l_oid;
@@ -367,7 +380,7 @@ BEGIN
         c2.relname)
         LOOP
             IF l_const_rec.contype IS NOT NULL THEN
-                l_constraints := concat(l_constraints, format('ALTER TABLE %I.%I ADD CONSTRAINT %I ', p_schema, p_table, l_const_rec.conname), l_const_rec.pg_get_constraintdef, ' USING INDEX TABLESPACE :"TABLESPACE_INDEX"', CASE l_sqlterminator WHEN TRUE THEN ';' ELSE '' END, chr(10));
+                l_constraints := concat(l_constraints, format('ALTER TABLE %I.%I ADD CONSTRAINT %I ', p_schema, p_table, l_const_rec.conname), l_const_rec.pg_get_constraintdef, ' USING INDEX TABLESPACE :"TABLESPACE_INDEX"', CASE l_sqlterminator_guc WHEN TRUE THEN ';' ELSE '' END, chr(10));
             END IF;
         END LOOP;
 
@@ -400,17 +413,17 @@ DECLARE
     l_return text;
     l_fkey_rec text;
     l_fkey text;
-    l_sqlterminator boolean;
+    l_sqlterminator_guc boolean;
 BEGIN
     -- Getting values of transform params
-    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator;
+    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
 
     -- Getting the OID of the table
     EXECUTE 'SELECT ''' || p_schema || '.' || p_table || '''::regclass::oid' INTO l_oid;
     
     FOR l_fkey_rec IN (
         SELECT
-            'ALTER TABLE ' || nspname || '.' || relname || ' ADD CONSTRAINT ' || conname || ' ' || pg_get_constraintdef(pg_constraint.oid) || ' USING INDEX TABLESPACE :"TABLESPACE_INDEX"' || CASE l_sqlterminator WHEN TRUE THEN ';' ELSE '' END
+            'ALTER TABLE ' || nspname || '.' || relname || ' ADD CONSTRAINT ' || conname || ' ' || pg_get_constraintdef(pg_constraint.oid) || ' USING INDEX TABLESPACE :"TABLESPACE_INDEX"' || CASE l_sqlterminator_guc WHEN TRUE THEN ';' ELSE '' END
         FROM
             pg_constraint
             INNER JOIN pg_class ON conrelid = pg_class.oid
@@ -426,7 +439,7 @@ BEGIN
                 l_fkey := concat(l_fkey, l_fkey_rec, chr(10));
             END IF;
         END LOOP;
-
+    
     l_return := l_fkey;
 
     -- Return the final DDL prepared
@@ -453,10 +466,10 @@ DECLARE
     l_const_rec record;
     l_indexes text;
     l_return text;
-    l_sqlterminator boolean;
+    l_sqlterminator_guc boolean;
 BEGIN
     -- Getting values of transform params
-    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator;
+    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
 
     -- Getting the OID of the table
     EXECUTE 'SELECT ''' || p_schema || '.' || p_table || '''::regclass::oid' INTO l_oid;
@@ -492,7 +505,7 @@ BEGIN
         c2.relname)
         LOOP
             IF l_const_rec.contype IS NULL THEN
-                l_indexes := concat(l_indexes, l_const_rec.pg_get_indexdef, ' TABLESPACE :"TABLESPACE_INDEX"', CASE l_sqlterminator WHEN TRUE THEN ';' ELSE '' END, chr(10));
+                l_indexes := concat(l_indexes, l_const_rec.pg_get_indexdef, ' TABLESPACE :"TABLESPACE_INDEX"', CASE l_sqlterminator_guc WHEN TRUE THEN ';' ELSE '' END, chr(10));
             END IF;
         END LOOP;
     
@@ -522,10 +535,10 @@ $$
 DECLARE
     trigger_def text;
     l_return text := '';
-    l_sqlterminator boolean;
+    l_sqlterminator_guc boolean;
 BEGIN
     -- Getting values of transform params
-    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator;
+    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
 
     FOR trigger_def IN
         SELECT pg_get_triggerdef(t.oid)
@@ -536,7 +549,7 @@ BEGIN
           AND c.relname = table_name
           AND t.tgisinternal = FALSE -- Exclude system triggers
     LOOP
-        l_return := l_return || trigger_def || CASE l_sqlterminator WHEN TRUE THEN ';' ELSE '' END || E'\n\n';
+        l_return := l_return || trigger_def || CASE l_sqlterminator_guc WHEN TRUE THEN ';' ELSE '' END || E'\n\n';
     END LOOP;
     IF l_return = '' THEN
         RAISE EXCEPTION 'specified object of type TRIGGER not found';
@@ -558,14 +571,14 @@ CREATE OR REPLACE FUNCTION dbms_metadata.get_view_ddl (view_schema text, view_na
     AS $$
 DECLARE
     l_return text;
-    l_sqlterminator boolean;
+    l_sqlterminator_guc boolean;
 BEGIN
     -- Getting values of transform params
-    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator;
+    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
 
     SELECT
         'CREATE VIEW ' || quote_ident(view_schema) || '.' || quote_ident(view_name) || ' AS ' || pg_get_viewdef(quote_ident(view_schema) || '.' || quote_ident(view_name)) INTO STRICT l_return;
-    IF NOT l_sqlterminator THEN
+    IF NOT l_sqlterminator_guc THEN
         l_return := TRIM(TRAILING ';' FROM l_return);
     END IF;
     RETURN l_return;
@@ -588,17 +601,17 @@ CREATE OR REPLACE FUNCTION dbms_metadata.get_sequence_ddl (p_schema text, p_sequ
     AS $$
 DECLARE
     l_return text;
-    l_sqlterminator boolean;
+    l_sqlterminator_guc boolean;
 BEGIN
     -- Getting values of transform params
-    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator;
+    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
 
     SELECT
         'CREATE SEQUENCE ' || p_schema || '.' || sequencename || ' START WITH ' || start_value || ' INCREMENT BY ' || increment_by || ' MINVALUE ' || min_value || ' MAXVALUE ' || max_value || ' CACHE ' || cache_size || ' ' || CASE WHEN CYCLE IS TRUE THEN
             'CYCLE'
         ELSE
             'NO CYCLE'
-        END || CASE l_sqlterminator WHEN TRUE THEN ';' ELSE '' END INTO STRICT l_return
+        END || CASE l_sqlterminator_guc WHEN TRUE THEN ';' ELSE '' END INTO STRICT l_return
     FROM
         pg_sequences
     WHERE
@@ -627,10 +640,10 @@ CREATE OR REPLACE FUNCTION dbms_metadata.get_routine_ddl (schema_name text, rout
 DECLARE
     routine_code text;
     routine_type_flag text;
-    l_sqlterminator boolean;
+    l_sqlterminator_guc boolean;
 BEGIN
     -- Getting values of transform params
-    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator;
+    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
 
     CASE WHEN routine_type = 'PROCEDURE' THEN
         routine_type_flag = 'p';
@@ -647,7 +660,7 @@ BEGIN
         AND p.proname = routine_name
         AND p.prokind = routine_type_flag; 
     
-    IF l_sqlterminator THEN
+    IF l_sqlterminator_guc THEN
         routine_code := concat(routine_code, ';');
     END IF;
     RETURN routine_code;
@@ -672,17 +685,17 @@ RETURNS text AS
 $$
 DECLARE
     index_def text;
-    l_sqlterminator boolean;
+    l_sqlterminator_guc boolean;
 BEGIN
     -- Getting values of transform params
-    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator;
+    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
 
     SELECT pg_indexes.indexdef INTO STRICT index_def
     FROM pg_indexes
     WHERE indexname = index_name
       AND schemaname = schema_name;
     
-    IF l_sqlterminator THEN
+    IF l_sqlterminator_guc THEN
         index_def := concat(index_def, ';');
     END IF;    
     RETURN index_def;
@@ -707,10 +720,10 @@ RETURNS text AS
 $$
 DECLARE
     alter_statement text;
-    l_sqlterminator boolean;
+    l_sqlterminator_guc boolean;
 BEGIN
     -- Getting values of transform params
-    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator;
+    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
 
     SELECT format('ALTER TABLE %I.%I ADD CONSTRAINT %I %s', schema_name, cl.relname, conname, pg_catalog.pg_get_constraintdef(con.oid, TRUE))
     INTO STRICT alter_statement
@@ -720,7 +733,7 @@ BEGIN
         AND contype <> 'f'
         AND connamespace = (SELECT oid FROM pg_namespace WHERE nspname = schema_name);
     
-    IF l_sqlterminator THEN
+    IF l_sqlterminator_guc THEN
         alter_statement := concat(alter_statement, ';');
     END IF; 
     RETURN alter_statement;
@@ -745,10 +758,10 @@ RETURNS text AS
 $$
 DECLARE
     alter_statement text;
-    l_sqlterminator boolean;
+    l_sqlterminator_guc boolean;
 BEGIN
     -- Getting values of transform params
-    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator;
+    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
 
     SELECT format('ALTER TABLE %I.%I ADD CONSTRAINT %I %s', schema_name, cl.relname, conname, pg_catalog.pg_get_constraintdef(con.oid, TRUE))
     INTO STRICT alter_statement
@@ -758,7 +771,7 @@ BEGIN
         AND contype = 'f'
         AND connamespace = (SELECT oid FROM pg_namespace WHERE nspname = schema_name);
     
-    IF l_sqlterminator THEN
+    IF l_sqlterminator_guc THEN
         alter_statement := concat(alter_statement, ';');
     END IF; 
     RETURN alter_statement;
@@ -783,10 +796,10 @@ RETURNS text AS
 $$
 DECLARE
     trigger_def text;
-    l_sqlterminator boolean;
+    l_sqlterminator_guc boolean;
 BEGIN
     -- Getting values of transform params
-    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator;
+    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
 
     SELECT pg_get_triggerdef(t.oid)
     INTO STRICT trigger_def
@@ -796,7 +809,7 @@ BEGIN
     WHERE t.tgname = trigger_name
       AND n.nspname = schema_name;
 
-    IF l_sqlterminator THEN
+    IF l_sqlterminator_guc THEN
         trigger_def := concat(trigger_def, ';');
     END IF; 
     RETURN trigger_def;
