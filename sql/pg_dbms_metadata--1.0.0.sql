@@ -371,8 +371,7 @@ BEGIN
             END IF;
         END LOOP;
 
-    -- Append Constraints of Table to the Output
-    l_return := concat(l_return, ('-- Constraints' || chr(10) || l_constraints));
+    l_return := l_constraints;
 
     -- Return the final DDL prepared
     RETURN l_return;
@@ -427,9 +426,8 @@ BEGIN
                 l_fkey := concat(l_fkey, l_fkey_rec, chr(10));
             END IF;
         END LOOP;
-    
-    -- Append Foreign Key Constraints to the Output
-    l_return := concat(l_return, (chr(10) || chr(10) || '-- Foreign Key Constraints' || chr(10) || l_fkey));
+
+    l_return := l_fkey;
 
     -- Return the final DDL prepared
     RETURN l_return;
