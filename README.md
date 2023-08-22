@@ -133,9 +133,12 @@ Parameters:
 
 List of currently supported transform params
 
-| Object types          | Name          | Datatype      | Meaning       
-| --------------------- | ------------- | ------------- | -------------------------------------------------------------------------- 
-| All objects           | SQLTERMINATOR | boolean       | If TRUE, append the SQL terminator( ; ) to each DDL statement. Defaults to FALSE.  
+| Object types          | Name                                  | Datatype      | Meaning       
+| --------------------- | ------------------------------------- | ------------- | ----------------------------------------------------------------------------------------------------------
+| All objects           | SQLTERMINATOR                         | boolean       | If TRUE, append the SQL terminator( ; ) to each DDL statement. Defaults to FALSE.  
+| TABLE                 | CONSTRAINTS                           | boolean       | If TRUE, include all non-referential table constraints. If FALSE, omit them. Defaults to TRUE.  
+| TABLE                 | REF_CONSTRAINTS                       | boolean       | If TRUE, include all referential constraints (foreign keys). If FALSE, omit them. Defaults to TRUE.  
+| TABLE                 | CONSTRAINTS_AS_ALTER (UNSUPPORTED)    | boolean       | If TRUE, include table constraints as separate ALTER TABLE. This is not yet implemented in this extension. Currently all constraints are being given as separate DDL.  
 
 Example:
 ```
