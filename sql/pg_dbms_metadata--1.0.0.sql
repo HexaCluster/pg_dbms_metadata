@@ -97,19 +97,36 @@ COMMENT ON PROCEDURE dbms_metadata.set_transform_param (text, text) IS 'Used to 
 
 REVOKE ALL ON PROCEDURE dbms_metadata.set_transform_param FROM PUBLIC;
 
-CREATE OR REPLACE PROCEDURE dbms_metadata.set_transform_param(name text, value boolean)
+CREATE OR REPLACE PROCEDURE dbms_metadata.set_transform_param(name text, value boolean DEFAULT true)
     AS $$
 DECLARE
-    l_allowed_names text[] := ARRAY['SQLTERMINATOR', 'CONSTRAINTS', 'REF_CONSTRAINTS'];
+    l_allowed_names text[] := ARRAY['DEFAULT', 'SQLTERMINATOR', 'CONSTRAINTS', 'REF_CONSTRAINTS'];
 BEGIN
     IF NOT name = ANY(l_allowed_names) THEN
         RAISE EXCEPTION 'Name:% is not supported for value as boolean', name;
         RETURN;
+    ELSIF name = 'DEFAULT' THEN
+        IF value THEN
+            PERFORM dbms_metadata.set_default_transform_params();
+        END IF;
+    ELSE
+        PERFORM set_config('DBMS_METADATA.' || name, value::text, false);
     END IF;
-    PERFORM set_config('DBMS_METADATA.' || name, value::text, false);
 END;
 $$ 
 LANGUAGE plpgsql;
+
+----
+-- DBMS_METADATA.SET_DEFAULT_TRANSFORM_PARAMS
+----
+CREATE FUNCTION dbms_metadata.set_default_transform_params()
+RETURNS void
+AS 'MODULE_PATHNAME','set_default_transform_params'
+LANGUAGE C;
+
+COMMENT ON FUNCTION dbms_metadata.set_default_transform_params() IS 'Used to set default values to all transform params.';
+
+REVOKE ALL ON FUNCTION dbms_metadata.set_default_transform_params FROM PUBLIC;
 
 ----
 -- DBMS_METADATA.GET_TABLE_DDL

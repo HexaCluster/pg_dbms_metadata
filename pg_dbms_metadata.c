@@ -3,22 +3,57 @@
 
 PG_MODULE_MAGIC;
 
-// declaring transform params
-bool sqlterminator = false;
-bool constraints = false;
-bool ref_constraints = false;
+/* Declaring transform params */
+bool sqlterminator;
+bool constraints;
+bool ref_constraints;
 
+/* Default values to gucs */
+bool sqlterminator_default = false;
+bool constraints_default = true;
+bool ref_constraints_default = true;
+
+/* Declaring functions */
 void _PG_init(void);
+void set_default_gucs(void);
+Datum set_default_transform_params(PG_FUNCTION_ARGS);
 
-// This function will be called when a session starts as we are configuring session_preload_libraries param
+PG_FUNCTION_INFO_V1(set_default_transform_params);
+
+/* This function will be called when a session starts as we are configuring session_preload_libraries param */
 void _PG_init(void) 
 {
-    // initializing all transform params with default values
+    set_default_gucs();
+}
+
+/*
+ * CREATE FUNCTION dbms_metadata.set_default_transform_params()
+ * RETURNS void
+ */
+Datum set_default_transform_params(PG_FUNCTION_ARGS) {
+    SetConfigOption("dbms_metadata.sqlterminator", 
+                    (sqlterminator_default == true) ? "true" : "false", 
+                    PGC_USERSET, 
+                    PGC_S_SESSION);
+    SetConfigOption("dbms_metadata.constraints", 
+                    (constraints_default == true) ? "true" : "false", 
+                    PGC_USERSET, 
+                    PGC_S_SESSION);
+    SetConfigOption("dbms_metadata.ref_constraints", 
+                    (ref_constraints_default == true) ? "true" : "false", 
+                    PGC_USERSET, 
+                    PGC_S_SESSION);
+    PG_RETURN_NULL();
+}
+
+/* initializes all transform params with default values */
+void set_default_gucs(void)
+{
     DefineCustomBoolVariable("dbms_metadata.sqlterminator", 
                             "If true, Append a SQL terminator",
                             NULL,
                             &sqlterminator, 
-                            false, 
+                            sqlterminator_default, 
                             PGC_USERSET,
                             0, 
                             NULL, 
@@ -29,7 +64,7 @@ void _PG_init(void)
                             "If true, include all non-referential table constraints",
                             NULL,
                             &constraints, 
-                            true, 
+                            constraints_default, 
                             PGC_USERSET,
                             0, 
                             NULL, 
@@ -40,7 +75,7 @@ void _PG_init(void)
                             "If true, include all referential constraints",
                             NULL,
                             &ref_constraints, 
-                            true, 
+                            ref_constraints_default, 
                             PGC_USERSET,
                             0, 
                             NULL, 
