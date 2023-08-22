@@ -7,11 +7,13 @@ PG_MODULE_MAGIC;
 bool sqlterminator;
 bool constraints;
 bool ref_constraints;
+bool partitioning;
 
 /* Default values to gucs */
 bool sqlterminator_default = false;
 bool constraints_default = true;
 bool ref_constraints_default = true;
+bool partitioning_default = true;
 
 /* Declaring functions */
 void _PG_init(void);
@@ -41,6 +43,10 @@ Datum set_default_transform_params(PG_FUNCTION_ARGS) {
                     PGC_S_SESSION);
     SetConfigOption("dbms_metadata.ref_constraints", 
                     (ref_constraints_default == true) ? "true" : "false", 
+                    PGC_USERSET, 
+                    PGC_S_SESSION);
+    SetConfigOption("dbms_metadata.partitioning", 
+                    (partitioning_default == true) ? "true" : "false", 
                     PGC_USERSET, 
                     PGC_S_SESSION);
     PG_RETURN_NULL();
@@ -76,6 +82,16 @@ void set_default_gucs(void)
                             NULL,
                             &ref_constraints, 
                             ref_constraints_default, 
+                            PGC_USERSET,
+                            0, 
+                            NULL, 
+                            NULL, 
+                            NULL);
+    DefineCustomBoolVariable("dbms_metadata.partitioning", 
+                            "If TRUE, include partitioning clauses in the DDL",
+                            NULL,
+                            &partitioning, 
+                            partitioning_default, 
                             PGC_USERSET,
                             0, 
                             NULL, 

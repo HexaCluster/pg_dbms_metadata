@@ -100,7 +100,7 @@ REVOKE ALL ON PROCEDURE dbms_metadata.set_transform_param FROM PUBLIC;
 CREATE OR REPLACE PROCEDURE dbms_metadata.set_transform_param(name text, value boolean DEFAULT true)
     AS $$
 DECLARE
-    l_allowed_names text[] := ARRAY['DEFAULT', 'SQLTERMINATOR', 'CONSTRAINTS', 'REF_CONSTRAINTS'];
+    l_allowed_names text[] := ARRAY['DEFAULT', 'SQLTERMINATOR', 'CONSTRAINTS', 'REF_CONSTRAINTS', 'PARTITIONING'];
 BEGIN
     IF NOT name = ANY(l_allowed_names) THEN
         RAISE EXCEPTION 'Name:% is not supported for value as boolean', name;
@@ -146,11 +146,13 @@ DECLARE
     l_sqlterminator_guc boolean;
     l_constraints_guc boolean;
     l_ref_constraints_guc boolean;
+    l_partitioning_guc boolean;
 BEGIN
     -- Getting values of transform params
     SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
     SELECT current_setting('DBMS_METADATA.CONSTRAINTS')::boolean INTO l_constraints_guc;
     SELECT current_setting('DBMS_METADATA.REF_CONSTRAINTS')::boolean INTO l_ref_constraints_guc;
+    SELECT current_setting('DBMS_METADATA.PARTITIONING')::boolean INTO l_partitioning_guc;
 
     -- Getting the OID of the table
     -- The following OID will be used to get the definition from sequences
@@ -189,32 +191,34 @@ BEGIN
             attnum) a INTO l_table_def;
 
     -- Add Table DDL with its columns and their datatypes to the Output
-    l_return := concat(l_return, '-- Table definition' || chr(10) || 'CREATE TABLE ' || p_schema || '.' || p_table || ' (' || l_table_def || ') TABLESPACE :"TABLESPACE_DATA"');
+    l_return := concat(l_return, '-- Table definition' || chr(10) || 'CREATE TABLE ' || p_schema || '.' || p_table || ' (' || l_table_def || ')');
     
-    -- Get partitioning info of table
-    SELECT
-        CASE
-            WHEN pt.partstrat = 'r' THEN 'RANGE'
-            WHEN pt.partstrat = 'l' THEN 'LIST'
-            WHEN pt.partstrat = 'h' THEN 'HASH'
-            ELSE null
-        END AS partitioning_type,
-        string_agg(a.attname, ', ') AS partitioned_columns
-    INTO l_partitioning_type, l_partitioned_columns
-    FROM
-        pg_class c
-    LEFT JOIN pg_partitioned_table pt ON c.oid = pt.partrelid
-    LEFT JOIN pg_attribute a ON c.oid = a.attrelid
-    WHERE
-        c.relnamespace = p_schema::regnamespace
-        AND c.relname = p_table
-        AND a.attnum = ANY(pt.partattrs)
-        AND a.attnum > 0
-    GROUP BY c.relname, pt.partstrat;
+    IF l_partitioning_guc THEN
+        -- Get partitioning info of table
+        SELECT
+            CASE
+                WHEN pt.partstrat = 'r' THEN 'RANGE'
+                WHEN pt.partstrat = 'l' THEN 'LIST'
+                WHEN pt.partstrat = 'h' THEN 'HASH'
+                ELSE null
+            END AS partitioning_type,
+            string_agg(a.attname, ', ') AS partitioned_columns
+        INTO l_partitioning_type, l_partitioned_columns
+        FROM
+            pg_class c
+        LEFT JOIN pg_partitioned_table pt ON c.oid = pt.partrelid
+        LEFT JOIN pg_attribute a ON c.oid = a.attrelid
+        WHERE
+            c.relnamespace = p_schema::regnamespace
+            AND c.relname = p_table
+            AND a.attnum = ANY(pt.partattrs)
+            AND a.attnum > 0
+        GROUP BY c.relname, pt.partstrat;
 
-    -- Add partitioning if any
-    IF l_partitioning_type IS NOT NULL THEN
-        l_return := concat(l_return, ' PARTITION BY ' || l_partitioning_type || '(' || l_partitioned_columns || ')');
+        -- Add partitioning if any
+        IF l_partitioning_type IS NOT NULL THEN
+            l_return := concat(l_return, ' PARTITION BY ' || l_partitioning_type || '(' || l_partitioned_columns || ')');
+        END IF;
     END IF;
 
     IF l_sqlterminator_guc THEN
@@ -397,7 +401,7 @@ BEGIN
         c2.relname)
         LOOP
             IF l_const_rec.contype IS NOT NULL THEN
-                l_constraints := concat(l_constraints, format('ALTER TABLE %I.%I ADD CONSTRAINT %I ', p_schema, p_table, l_const_rec.conname), l_const_rec.pg_get_constraintdef, ' USING INDEX TABLESPACE :"TABLESPACE_INDEX"', CASE l_sqlterminator_guc WHEN TRUE THEN ';' ELSE '' END, chr(10));
+                l_constraints := concat(l_constraints, format('ALTER TABLE %I.%I ADD CONSTRAINT %I ', p_schema, p_table, l_const_rec.conname), l_const_rec.pg_get_constraintdef, CASE l_sqlterminator_guc WHEN TRUE THEN ';' ELSE '' END, chr(10));
             END IF;
         END LOOP;
 
@@ -440,7 +444,7 @@ BEGIN
     
     FOR l_fkey_rec IN (
         SELECT
-            'ALTER TABLE ' || nspname || '.' || relname || ' ADD CONSTRAINT ' || conname || ' ' || pg_get_constraintdef(pg_constraint.oid) || ' USING INDEX TABLESPACE :"TABLESPACE_INDEX"' || CASE l_sqlterminator_guc WHEN TRUE THEN ';' ELSE '' END
+            'ALTER TABLE ' || nspname || '.' || relname || ' ADD CONSTRAINT ' || conname || ' ' || pg_get_constraintdef(pg_constraint.oid) || CASE l_sqlterminator_guc WHEN TRUE THEN ';' ELSE '' END
         FROM
             pg_constraint
             INNER JOIN pg_class ON conrelid = pg_class.oid
@@ -522,7 +526,7 @@ BEGIN
         c2.relname)
         LOOP
             IF l_const_rec.contype IS NULL THEN
-                l_indexes := concat(l_indexes, l_const_rec.pg_get_indexdef, ' TABLESPACE :"TABLESPACE_INDEX"', CASE l_sqlterminator_guc WHEN TRUE THEN ';' ELSE '' END, chr(10));
+                l_indexes := concat(l_indexes, l_const_rec.pg_get_indexdef, CASE l_sqlterminator_guc WHEN TRUE THEN ';' ELSE '' END, chr(10));
             END IF;
         END LOOP;
     

@@ -1,43 +1,43 @@
-                                                                                          get_ddl                                                                                           
---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- -- Table definition                                                                                                                                                                       +
- CREATE TABLE gdmmm.table_all (a integer DEFAULT nextval('gdmmm.table_all_a_seq'::regclass) NOT NULL,b integer  NOT NULL,c character varying(20) ,d integer ) TABLESPACE :"TABLESPACE_DATA"+
-                                                                                                                                                                                           +
- -- Table comments                                                                                                                                                                         +
- COMMENT ON TABLE gdmmm.table_all IS 'This is a comment for the table.'                                                                                                                    +
-                                                                                                                                                                                           +
- -- Column comments                                                                                                                                                                        +
- COMMENT ON COLUMN gdmmm.table_all.a IS 'This is a comment for the column.'                                                                                                                +
- COMMENT ON COLUMN gdmmm.table_all.b IS 'This is a comment for the column.'                                                                                                                +
-                                                                                                                                                                                           +
-                                                                                                                                                                                           +
- -- Constraints                                                                                                                                                                            +
- ALTER TABLE gdmmm.table_all ADD CONSTRAINT table_all_pkey PRIMARY KEY (a) USING INDEX TABLESPACE :"TABLESPACE_INDEX"                                                                      +
- ALTER TABLE gdmmm.table_all ADD CONSTRAINT table_all_d_key UNIQUE (d) USING INDEX TABLESPACE :"TABLESPACE_INDEX"                                                                          +
+                                                                           get_ddl                                                                            
+--------------------------------------------------------------------------------------------------------------------------------------------------------------
+ -- Table definition                                                                                                                                         +
+ CREATE TABLE gdmmm.table_all (a integer DEFAULT nextval('gdmmm.table_all_a_seq'::regclass) NOT NULL,b integer  NOT NULL,c character varying(20) ,d integer )+
+                                                                                                                                                             +
+ -- Table comments                                                                                                                                           +
+ COMMENT ON TABLE gdmmm.table_all IS 'This is a comment for the table.'                                                                                      +
+                                                                                                                                                             +
+ -- Column comments                                                                                                                                          +
+ COMMENT ON COLUMN gdmmm.table_all.a IS 'This is a comment for the column.'                                                                                  +
+ COMMENT ON COLUMN gdmmm.table_all.b IS 'This is a comment for the column.'                                                                                  +
+                                                                                                                                                             +
+                                                                                                                                                             +
+ -- Constraints                                                                                                                                              +
+ ALTER TABLE gdmmm.table_all ADD CONSTRAINT table_all_pkey PRIMARY KEY (a)                                                                                   +
+ ALTER TABLE gdmmm.table_all ADD CONSTRAINT table_all_d_key UNIQUE (d)                                                                                       +
  
 (1 row)
 
-                                                                        get_ddl                                                                         
---------------------------------------------------------------------------------------------------------------------------------------------------------
- -- Table definition                                                                                                                                   +
- CREATE TABLE gdmmm.table_all_child (id integer ) TABLESPACE :"TABLESPACE_DATA"                                                                        +
-                                                                                                                                                       +
- -- Constraints                                                                                                                                        +
- ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT child_uniq UNIQUE (id) USING INDEX TABLESPACE :"TABLESPACE_INDEX"                                    +
-                                                                                                                                                       +
-                                                                                                                                                       +
- -- Referential constraints                                                                                                                            +
- ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT fk_customer FOREIGN KEY (id) REFERENCES gdmmm.table_all(a) USING INDEX TABLESPACE :"TABLESPACE_INDEX"+
+                                                   get_ddl                                                   
+-------------------------------------------------------------------------------------------------------------
+ -- Table definition                                                                                        +
+ CREATE TABLE gdmmm.table_all_child (id integer )                                                           +
+                                                                                                            +
+ -- Constraints                                                                                             +
+ ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT child_uniq UNIQUE (id)                                    +
+                                                                                                            +
+                                                                                                            +
+ -- Referential constraints                                                                                 +
+ ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT fk_customer FOREIGN KEY (id) REFERENCES gdmmm.table_all(a)+
  
 (1 row)
 
-                                                                          get_ddl                                                                          
------------------------------------------------------------------------------------------------------------------------------------------------------------
- -- Table definition                                                                                                                                      +
- CREATE TABLE gdmmm.sales (sale_id integer  NOT NULL,sale_date date  NOT NULL,amount numeric ) TABLESPACE :"TABLESPACE_DATA" PARTITION BY RANGE(sale_date)+
-                                                                                                                                                          +
- -- Constraints                                                                                                                                           +
- ALTER TABLE gdmmm.sales ADD CONSTRAINT sales_pkey PRIMARY KEY (sale_id, sale_date) USING INDEX TABLESPACE :"TABLESPACE_INDEX"                            +
+                                                           get_ddl                                                           
+-----------------------------------------------------------------------------------------------------------------------------
+ -- Table definition                                                                                                        +
+ CREATE TABLE gdmmm.sales (sale_id integer  NOT NULL,sale_date date  NOT NULL,amount numeric ) PARTITION BY RANGE(sale_date)+
+                                                                                                                            +
+ -- Constraints                                                                                                             +
+ ALTER TABLE gdmmm.sales ADD CONSTRAINT sales_pkey PRIMARY KEY (sale_id, sale_date)                                         +
  
 (1 row)
 
