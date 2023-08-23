@@ -82,6 +82,7 @@ Below is list of currently supported object types:
 * INDEX 
 * CONSTRAINT 
 * REF_CONSTRAINT
+* TYPE
 
 For TABLE type, the function extracts a basic table DDL without constraints and indexes. DDL will include list of columns of the table, along with datatypes, DEFAULT values and NOT NULL constraints, in the order of the attnum. DDL will also include comments on table and columns if any.
 

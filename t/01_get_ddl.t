@@ -1,4 +1,4 @@
-use Test::Simple tests => 12;
+use Test::Simple tests => 14;
 
 $ENV{LANG}='C';
 
@@ -20,6 +20,9 @@ ok( $? == 0, "test for fetching trigger ddl");
 $ret = `psql -d regress_dbms_metadata -f test/sql/get_ddl/get_ddl_index_constraint.sql > results/get_ddl/get_ddl_index_constraint.out 2>&1`;
 ok( $? == 0, "test for fetching index and constraint ddl");
 
+$ret = `psql -d regress_dbms_metadata -f test/sql/get_ddl/get_ddl_type.sql > results/get_ddl/get_ddl_type.out 2>&1`;
+ok( $? == 0, "test for fetching type ddl");
+
 $ret = `diff results/get_ddl/get_ddl_table.out test/expected/get_ddl/get_ddl_table.out 2>&1`;
 ok( $? == 0, "diff for fetching table ddl");
 
@@ -37,3 +40,6 @@ ok( $? == 0, "diff for fetching trigger ddl");
 
 $ret = `diff results/get_ddl/get_ddl_index_constraint.out test/expected/get_ddl/get_ddl_index_constraint.out 2>&1`;
 ok( $? == 0, "diff for fetching index and constraint ddl");
+
+$ret = `diff results/get_ddl/get_ddl_type.out test/expected/get_ddl/get_ddl_type.out 2>&1`;
+ok( $? == 0, "diff for fetching type ddl");

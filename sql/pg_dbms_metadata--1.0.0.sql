@@ -29,6 +29,8 @@ BEGIN
         l_return := dbms_metadata.get_constraint_ddl (schema, name);
     WHEN 'REF_CONSTRAINT' THEN
         l_return := dbms_metadata.get_ref_constraint_ddl (schema, name);
+    WHEN 'TYPE' THEN
+        l_return := dbms_metadata.get_type_ddl (schema, name);
     ELSE
         -- Need to add other object types
         RAISE EXCEPTION 'Unknown type';
@@ -834,3 +836,44 @@ LANGUAGE plpgsql;
 COMMENT ON FUNCTION dbms_metadata.get_trigger_ddl (text, text) IS 'This function fetches DDL of a trigger';
 
 REVOKE ALL ON FUNCTION dbms_metadata.get_trigger_ddl FROM PUBLIC;
+
+CREATE OR REPLACE FUNCTION dbms_metadata.get_type_ddl(p_schema_name text, p_type_name text)
+RETURNS text AS $$
+DECLARE
+    l_create_statement text;
+    l_attribute_list text;
+    l_attribute record;
+    l_sqlterminator_guc boolean;
+BEGIN
+    -- Getting values of transform params
+    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
+    
+    FOR l_attribute IN
+        SELECT a.attname, format_type(a.atttypid, a.atttypmod) AS format_type
+        FROM pg_attribute a
+        JOIN pg_class c ON a.attrelid = c.oid
+        JOIN pg_namespace n ON c.relnamespace = n.oid
+        WHERE c.relname = p_type_name AND n.nspname = p_schema_name AND a.attnum > 0
+        ORDER BY a.attnum
+    LOOP
+        l_attribute_list := concat(l_attribute_list, ' ', l_attribute.attname, ' ', l_attribute.format_type, ',');
+    END LOOP;
+
+    -- Construct the CREATE TYPE statement
+    IF l_attribute_list IS NULL THEN
+        RAISE EXCEPTION 'Type % does not exist in schema %.', p_type_name, p_schema_name;
+    ELSE
+        l_attribute_list := TRIM(TRAILING ',' FROM l_attribute_list);
+        l_create_statement := concat('CREATE TYPE ', p_schema_name, '.', p_type_name, ' AS (', l_attribute_list, ')');
+        IF l_sqlterminator_guc THEN
+            l_create_statement := concat(l_create_statement, ';');
+        END IF; 
+    END IF;
+
+    RETURN l_create_statement;
+END;
+$$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION dbms_metadata.get_type_ddl (text, text) IS 'This function fetches DDL of a user defined type';
+
+REVOKE ALL ON FUNCTION dbms_metadata.get_type_ddl FROM PUBLIC;

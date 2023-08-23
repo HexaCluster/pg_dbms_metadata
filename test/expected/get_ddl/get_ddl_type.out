@@ -1,0 +1,10 @@
+                                        get_ddl                                         
+----------------------------------------------------------------------------------------
+ CREATE TYPE gdmmm.address AS ( city character varying, loc gdmmm.location, pin bigint)
+(1 row)
+
+                                   get_ddl                                   
+-----------------------------------------------------------------------------
+ CREATE TYPE gdmmm.location AS ( lat double precision, lon double precision)
+(1 row)
+
