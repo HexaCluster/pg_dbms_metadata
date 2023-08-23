@@ -276,9 +276,6 @@ BEGIN
 
     -- Return the final Table DDL prepared with Comments on Table and Columns
     RETURN l_return;
-EXCEPTION
-    WHEN OTHERS THEN
-        RAISE EXCEPTION '%',SQLERRM;
 END;
 $$
 LANGUAGE PLPGSQL;
@@ -420,9 +417,6 @@ BEGIN
 
     -- Return the final DDL prepared
     RETURN l_return;
-EXCEPTION
-    WHEN OTHERS THEN
-        RAISE EXCEPTION '%',SQLERRM;
 END;
 $$
 LANGUAGE PLPGSQL;
@@ -476,9 +470,6 @@ BEGIN
 
     -- Return the final DDL prepared
     RETURN l_return;
-EXCEPTION
-    WHEN OTHERS THEN
-        RAISE EXCEPTION '%',SQLERRM;
 END;
 $$
 LANGUAGE PLPGSQL;
@@ -547,9 +538,6 @@ BEGIN
     l_return := l_indexes;
     -- Return the final DDL prepared
     RETURN l_return;
-EXCEPTION
-    WHEN OTHERS THEN
-        RAISE EXCEPTION '%',SQLERRM;
 END;
 $$
 LANGUAGE PLPGSQL;
@@ -614,9 +602,6 @@ BEGIN
         l_return := TRIM(TRAILING ';' FROM l_return);
     END IF;
     RETURN l_return;
-EXCEPTION
-    WHEN OTHERS THEN
-        RAISE EXCEPTION 'An error occurred: %', SQLERRM;
 END;
 $$
 LANGUAGE plpgsql;
@@ -653,8 +638,6 @@ BEGIN
 EXCEPTION
     WHEN NO_DATA_FOUND THEN
         RAISE EXCEPTION 'Sequence with name % not found in schema %', p_sequence, p_schema;
-    WHEN OTHERS THEN
-        RAISE EXCEPTION 'An error occurred: %', SQLERRM;
 END;
 $$
 LANGUAGE PLPGSQL;
@@ -699,8 +682,6 @@ BEGIN
 EXCEPTION
     WHEN NO_DATA_FOUND THEN
         RAISE EXCEPTION '% with name % not found in schema %',routine_type, routine_name, schema_name;
-    WHEN OTHERS THEN
-        RAISE EXCEPTION 'An error occurred: %', SQLERRM;
 END;
 $$
 LANGUAGE plpgsql;
@@ -734,8 +715,6 @@ BEGIN
 EXCEPTION
     WHEN NO_DATA_FOUND THEN
         RAISE EXCEPTION 'Index with name % not found in schema %',index_name, schema_name;
-    WHEN OTHERS THEN
-        RAISE EXCEPTION 'An error occurred: %', SQLERRM;
 END;
 $$
 LANGUAGE plpgsql;
@@ -772,8 +751,6 @@ BEGIN
 EXCEPTION
     WHEN NO_DATA_FOUND THEN
         RAISE EXCEPTION 'Constraint with name % not found in schema %',constraint_name, schema_name;
-    WHEN OTHERS THEN
-        RAISE EXCEPTION 'An error occurred: %', SQLERRM;
 END;
 $$
 LANGUAGE plpgsql;
@@ -810,8 +787,6 @@ BEGIN
 EXCEPTION
     WHEN NO_DATA_FOUND THEN
         RAISE EXCEPTION 'Referential constraint with name % not found in schema %',constraint_name, schema_name;
-    WHEN OTHERS THEN
-        RAISE EXCEPTION 'An error occurred: %', SQLERRM;
 END;
 $$
 LANGUAGE plpgsql;
@@ -852,8 +827,6 @@ EXCEPTION
         RAISE EXCEPTION 'Trigger with name % not found in schema %', trigger_name, schema_name;
     WHEN TOO_MANY_ROWS THEN
         RAISE EXCEPTION 'Duplicate triggers found with name % in schema %', trigger_name, schema_name;
-    WHEN OTHERS THEN
-        RAISE EXCEPTION 'An error occurred: %', SQLERRM;
 END;
 $$
 LANGUAGE plpgsql;
