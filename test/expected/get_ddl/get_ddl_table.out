@@ -41,3 +41,13 @@
  
 (1 row)
 
+                                                                                      get_ddl                                                                                      
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ -- Table definition                                                                                                                                                              +
+ CREATE UNLOGGED TABLE gdmmm.sample_unlogged_table (id integer DEFAULT nextval('gdmmm.sample_unlogged_table_id_seq'::regclass) NOT NULL,name character varying(255) ,age integer )+
+                                                                                                                                                                                  +
+ -- Constraints                                                                                                                                                                   +
+ ALTER TABLE gdmmm.sample_unlogged_table ADD CONSTRAINT sample_unlogged_table_pkey PRIMARY KEY (id)                                                                               +
+ 
+(1 row)
+

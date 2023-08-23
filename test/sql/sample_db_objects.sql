@@ -46,6 +46,15 @@ CREATE TABLE gdmmm.sales_january PARTITION OF gdmmm.sales
     FOR VALUES FROM ('2023-01-01') TO ('2023-02-01');
 
 ----
+-- Unlogged Table
+----
+CREATE UNLOGGED TABLE gdmmm.sample_unlogged_table (
+    id serial PRIMARY KEY,
+    name varchar(255),
+    age integer
+);
+
+----
 -- Trigger 1
 ----
 CREATE OR REPLACE FUNCTION gdmmm.double_salary ()

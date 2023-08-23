@@ -100,7 +100,7 @@ REVOKE ALL ON PROCEDURE dbms_metadata.set_transform_param FROM PUBLIC;
 CREATE OR REPLACE PROCEDURE dbms_metadata.set_transform_param(name text, value boolean DEFAULT true)
     AS $$
 DECLARE
-    l_allowed_names text[] := ARRAY['DEFAULT', 'SQLTERMINATOR', 'CONSTRAINTS', 'REF_CONSTRAINTS', 'PARTITIONING'];
+    l_allowed_names text[] := ARRAY['DEFAULT', 'SQLTERMINATOR', 'CONSTRAINTS', 'REF_CONSTRAINTS', 'PARTITIONING', 'SEGMENT_ATTRIBUTES'];
 BEGIN
     IF NOT name = ANY(l_allowed_names) THEN
         RAISE EXCEPTION 'Name:% is not supported for value as boolean', name;
@@ -143,16 +143,19 @@ DECLARE
     l_return text;
     l_partitioning_type text;
     l_partitioned_columns text;
+    l_relpersistence text;
     l_sqlterminator_guc boolean;
     l_constraints_guc boolean;
     l_ref_constraints_guc boolean;
     l_partitioning_guc boolean;
+    l_segment_attributes_guc boolean;
 BEGIN
     -- Getting values of transform params
     SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
     SELECT current_setting('DBMS_METADATA.CONSTRAINTS')::boolean INTO l_constraints_guc;
     SELECT current_setting('DBMS_METADATA.REF_CONSTRAINTS')::boolean INTO l_ref_constraints_guc;
     SELECT current_setting('DBMS_METADATA.PARTITIONING')::boolean INTO l_partitioning_guc;
+    SELECT current_setting('DBMS_METADATA.SEGMENT_ATTRIBUTES')::boolean INTO l_segment_attributes_guc;
 
     -- Getting the OID of the table
     -- The following OID will be used to get the definition from sequences
@@ -190,8 +193,16 @@ BEGIN
         ORDER BY
             attnum) a INTO l_table_def;
 
+    IF l_segment_attributes_guc THEN
+        -- Get table persistence
+        SELECT relpersistence INTO STRICT l_relpersistence
+        FROM pg_class
+        WHERE oid = l_oid
+            AND relpersistence IN ('p','u');
+    END IF;
+    
     -- Add Table DDL with its columns and their datatypes to the Output
-    l_return := concat(l_return, '-- Table definition' || chr(10) || 'CREATE TABLE ' || p_schema || '.' || p_table || ' (' || l_table_def || ')');
+    l_return := concat(l_return, '-- Table definition' || chr(10) || 'CREATE '|| CASE l_relpersistence WHEN 'u' THEN 'UNLOGGED ' ELSE '' END ||'TABLE ' || p_schema || '.' || p_table || ' (' || l_table_def || ')');
     
     IF l_partitioning_guc THEN
         -- Get partitioning info of table

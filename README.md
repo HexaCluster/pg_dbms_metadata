@@ -139,7 +139,9 @@ List of currently supported transform params
 | TABLE                 | CONSTRAINTS                           | boolean       | If TRUE, include all non-referential table constraints. If FALSE, omit them. Defaults to TRUE.  
 | TABLE                 | REF_CONSTRAINTS                       | boolean       | If TRUE, include all referential constraints (foreign keys). If FALSE, omit them. Defaults to TRUE.  
 | TABLE                 | CONSTRAINTS_AS_ALTER (UNSUPPORTED)    | boolean       | If TRUE, include table constraints as separate ALTER TABLE. This is not yet implemented in this extension. Currently all constraints are being given as separate DDL.  
-| TABLE                 | PARTITIONING                          | boolean       | If TRUE, include partitioning clauses in the DDL. Unlike oracle, this extension does not support INDEX object type for this transform param as postgres indexes doesn't got any partitioning clauses.
+| TABLE                 | PARTITIONING                          | boolean       | If TRUE, include partitioning clauses in the DDL. Defaults to TRUE. Unlike oracle, this extension does not support INDEX object type for this transform param as postgres indexes doesn't got any partitioning clauses.
+| TABLE                 | SEGMENT_ATTRIBUTES                    | boolean       | If TRUE, include segment attributes in the DDL. Defaults to TRUE. Currently only logging attribute is supported and only TABLE object type is supported for this transform param.
+| All objects           | DEFAULT                               | boolean       | Calling dbms_metadata.set_transform_param with this parameter set to TRUE has the effect of resetting all transform params to their default values. Setting this FALSE has no effect. There is no default.  
 
 Example:
 ```
