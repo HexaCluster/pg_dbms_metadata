@@ -70,7 +70,20 @@ This is especially useful for database in DBaas cloud services. To upgrade just 
 
 ### [GET_DDL](#get_ddl)
 
-This function extracts DDL of database objects. Currently the supported object types are TABLE, VIEW, SEQUENCE, PROCEDURE, FUNCTION, INDEX, CONSTRAINT. For TABLE type, the function extracts a basic table DDL without constraints and indexes. DDL will include list of columns of the table, along with datatypes, DEFAULT values and NOT NULL constraints, in the order of the attnum. DDL will also include comments on table and columns if any.
+This function extracts DDL of database objects. 
+
+Below is list of currently supported object types:
+* TABLE 
+* VIEW 
+* SEQUENCE 
+* PROCEDURE 
+* FUNCTION 
+* TRIGGER
+* INDEX 
+* CONSTRAINT 
+* REF_CONSTRAINT
+
+For TABLE type, the function extracts a basic table DDL without constraints and indexes. DDL will include list of columns of the table, along with datatypes, DEFAULT values and NOT NULL constraints, in the order of the attnum. DDL will also include comments on table and columns if any.
 
 Syntax:
 ```
@@ -92,7 +105,14 @@ SELECT dbms_metadata.get_ddl('TABLE','table_all','gdmmm');
 
 ### [GET_DEPENDENT_DDL](#get_dependent_ddl)
 
-This function extracts DDL of all dependent objects of specified object type for a specified base object. Currently the supported dependent object types are SEQUENCE, CONSTRAINT, INDEX.
+This function extracts DDL of all dependent objects of specified object type for a specified base object. 
+
+Below is the list of currently supported dependent object types
+* SEQUENCE
+* TRIGGER
+* CONSTRAINT
+* REF_CONSTRAINT
+* INDEX.
 
 Syntax:
 ```
