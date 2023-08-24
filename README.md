@@ -10,6 +10,7 @@ Information about the Oracle DBMS_metadata package can be found [here](https://d
 * [Functions](#functions)
   - [GET_DDL](#get_ddl)
   - [GET_DEPENDENT_DDL](#get_dependent_ddl)
+  - [GET_GRANTED_DDL](#get_granted_ddl)
   - [SET_TRANSFORM_PARAM](#set_transform_param)
 * [Authors](#authors)
 * [License](#license)
@@ -20,6 +21,7 @@ This PostgreSQL extension provide compatibility with the DBMS_METADATA Oracle pa
 
 * `GET_DDL()` This function extracts DDL of specified object.  
 * `GET_DEPENDENT_DDL()` This function extracts DDL of all dependent objects of specified type for a specified base object.
+* `GET_GRANTED_DDL()` This function extracts the SQL statements to recreate granted privileges and roles for a specified grantee.
 * `SET_TRANSFORM_PARAM()` This procedure is used to customize DDL through configuring session-level transform params. 
 
 ## [Installation](#installation)
@@ -91,7 +93,8 @@ Syntax:
 dbms_metadata.get_ddl (
    object_type      IN text,
    name             IN text,
-   schema           IN text);
+   schema           IN text)
+   RETURNS text;
 ```
 Parameters:
 
@@ -120,7 +123,8 @@ Syntax:
 dbms_metadata.get_dependent_ddl (
    object_type          IN text,
    base_object_name     IN text,
-   base_object_schema   IN text);
+   base_object_schema   IN text)
+   RETURNS text;
 ```
 Parameters:
 
@@ -131,6 +135,30 @@ Parameters:
 Example:
 ```
 SELECT dbms_metadata.get_dependent_ddl('CONSTRAINT','table_all','gdmmm');
+```
+
+### [GET_GRANTED_DDL](#get_granted_ddl)
+
+This function extracts the SQL statements to recreate granted privileges and roles for a specified grantee.
+
+Below is the list of currently supported object types
+* ROLE_GRANT
+
+Syntax:
+```
+dbms_metadata.get_granted_ddl (
+    object_type  IN text, 
+    grantee      IN text)
+    RETURNS text;
+```
+Parameters:
+
+- object_type: Type of grants to retrieve 
+- grantee: User/role for whom we need to retrieve grants
+
+Example:
+```
+SELECT dbms_metadata.get_granted_ddl('ROLE_GRANT','user_test');
 ```
 
 ### [SET_TRANSFORM_PARAM](#set_transform_param)

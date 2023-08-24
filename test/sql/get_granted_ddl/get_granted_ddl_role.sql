@@ -1,0 +1,1 @@
+SELECT dbms_metadata.get_granted_ddl('ROLE_GRANT','user_test');

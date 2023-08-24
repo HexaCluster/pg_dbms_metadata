@@ -145,3 +145,13 @@ BEGIN
 END
 $BODY$;
 
+----
+-- Users and Roles
+----
+CREATE ROLE role_test;
+
+CREATE ROLE role_test2;
+
+CREATE USER user_test;
+
+GRANT role_test, role_test2 TO user_test;

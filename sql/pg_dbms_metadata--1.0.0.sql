@@ -1,5 +1,5 @@
 ----
--- Script to create the base objects of the pg_dbms_metadata extension
+-- Script to create the objects of the pg_dbms_metadata extension
 ----
 ----
 -- DBMS_METADATA.GET_DDL
@@ -40,7 +40,7 @@ END;
 $$
 LANGUAGE PLPGSQL;
 
-COMMENT ON FUNCTION dbms_metadata.get_ddl (text, text, text) IS 'Fetches DDL of database objects. Supported object types are TABLE, VIEW, SEQUENCE, PROCEDURE, FUNCTION.';
+COMMENT ON FUNCTION dbms_metadata.get_ddl (text, text, text) IS 'Retrieves DDL of database objects. Supported object types are TABLE, VIEW, SEQUENCE, PROCEDURE, FUNCTION.';
 
 REVOKE ALL ON FUNCTION dbms_metadata.get_ddl FROM PUBLIC;
 
@@ -74,9 +74,35 @@ END;
 $$
 LANGUAGE PLPGSQL;
 
-COMMENT ON FUNCTION dbms_metadata.get_dependent_ddl (text, text, text) IS 'Fetches DDL of dependent objects on provided base object. Supported dependent object types are SEQUENCE, CONSTRAINT, INDEX.';
+COMMENT ON FUNCTION dbms_metadata.get_dependent_ddl (text, text, text) IS 'Retrieves DDL of dependent objects on provided base object. Supported dependent object types are SEQUENCE, CONSTRAINT, INDEX.';
 
 REVOKE ALL ON FUNCTION dbms_metadata.get_dependent_ddl FROM PUBLIC;
+
+----
+-- DBMS_METADATA.GET_GRANTED_DDL
+----
+CREATE OR REPLACE FUNCTION dbms_metadata.get_granted_ddl (object_type text, grantee text)
+    RETURNS text
+    AS $$
+DECLARE
+    l_return text;
+BEGIN
+    CASE object_type
+    WHEN 'ROLE_GRANT' THEN
+        l_return := dbms_metadata.get_granted_roles_ddl (grantee);
+    ELSE
+        -- Need to add other object types
+        RAISE EXCEPTION 'Unknown type';
+    END CASE;
+    RETURN l_return;
+END;
+$$
+LANGUAGE PLPGSQL;
+
+COMMENT ON FUNCTION dbms_metadata.get_granted_ddl (text, text) IS 'Retrieves the SQL statements to recreate granted privileges and roles for a specified grantee.';
+
+REVOKE ALL ON FUNCTION dbms_metadata.get_granted_ddl FROM PUBLIC;
+
 
 ----
 -- DBMS_METADATA.SET_TRANSFORM_PARAM
@@ -129,6 +155,10 @@ LANGUAGE C;
 COMMENT ON FUNCTION dbms_metadata.set_default_transform_params() IS 'Used to set default values to all transform params.';
 
 REVOKE ALL ON FUNCTION dbms_metadata.set_default_transform_params FROM PUBLIC;
+
+------------------------------------------------------------------------------
+-- DBMS_METADATA.GET_DDL utility functions
+------------------------------------------------------------------------------
 
 ----
 -- DBMS_METADATA.GET_TABLE_DDL
@@ -282,7 +312,7 @@ END;
 $$
 LANGUAGE PLPGSQL;
 
-COMMENT ON FUNCTION dbms_metadata.get_table_ddl (text, text) IS 'This function fetches a basic table DDL without constraints and indexes. DDL will include list of columns of the table, along with datatypes, DEFAULT values and NOT NULL constraints, in the order of the attnum. DDL will also include comments on table and columns if any.';
+COMMENT ON FUNCTION dbms_metadata.get_table_ddl (text, text) IS 'This function retrieves a basic table DDL without constraints and indexes. DDL will include list of columns of the table, along with datatypes, DEFAULT values and NOT NULL constraints, in the order of the attnum. DDL will also include comments on table and columns if any.';
 
 REVOKE ALL ON FUNCTION dbms_metadata.get_table_ddl FROM PUBLIC;
 
@@ -309,7 +339,7 @@ END;
 $$
 LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION dbms_metadata.get_view_ddl (text, text) IS 'This function fetches DDL of a view';
+COMMENT ON FUNCTION dbms_metadata.get_view_ddl (text, text) IS 'This function retrieves DDL of a view';
 
 REVOKE ALL ON FUNCTION dbms_metadata.get_view_ddl FROM PUBLIC;
 
@@ -345,7 +375,7 @@ END;
 $$
 LANGUAGE PLPGSQL;
 
-COMMENT ON FUNCTION dbms_metadata.get_sequence_ddl (text, text) IS 'This function fetches DDL of a sequence';
+COMMENT ON FUNCTION dbms_metadata.get_sequence_ddl (text, text) IS 'This function retrieves DDL of a sequence';
 
 REVOKE ALL ON FUNCTION dbms_metadata.get_sequence_ddl FROM PUBLIC;
 
@@ -389,7 +419,7 @@ END;
 $$
 LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION dbms_metadata.get_routine_ddl (text, text, text) IS 'This function fetches DDL of a procedure/function';
+COMMENT ON FUNCTION dbms_metadata.get_routine_ddl (text, text, text) IS 'This function retrieves DDL of a procedure/function';
 
 REVOKE ALL ON FUNCTION dbms_metadata.get_routine_ddl FROM PUBLIC;
 
@@ -422,7 +452,7 @@ END;
 $$
 LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION dbms_metadata.get_index_ddl (text, text) IS 'This function fetches DDL of an index';
+COMMENT ON FUNCTION dbms_metadata.get_index_ddl (text, text) IS 'This function retrieves DDL of an index';
 
 REVOKE ALL ON FUNCTION dbms_metadata.get_index_ddl FROM PUBLIC;
 
@@ -458,7 +488,7 @@ END;
 $$
 LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION dbms_metadata.get_constraint_ddl (text, text) IS 'This function fetches DDL of a constraint';
+COMMENT ON FUNCTION dbms_metadata.get_constraint_ddl (text, text) IS 'This function retrieves DDL of a constraint';
 
 REVOKE ALL ON FUNCTION dbms_metadata.get_constraint_ddl FROM PUBLIC;
 
@@ -494,7 +524,7 @@ END;
 $$
 LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION dbms_metadata.get_ref_constraint_ddl (text, text) IS 'This function fetches DDL of a constraint';
+COMMENT ON FUNCTION dbms_metadata.get_ref_constraint_ddl (text, text) IS 'This function retrieves DDL of a constraint';
 
 REVOKE ALL ON FUNCTION dbms_metadata.get_ref_constraint_ddl FROM PUBLIC;
 
@@ -534,7 +564,7 @@ END;
 $$
 LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION dbms_metadata.get_trigger_ddl (text, text) IS 'This function fetches DDL of a trigger';
+COMMENT ON FUNCTION dbms_metadata.get_trigger_ddl (text, text) IS 'This function retrieves DDL of a trigger';
 
 REVOKE ALL ON FUNCTION dbms_metadata.get_trigger_ddl FROM PUBLIC;
 
@@ -575,9 +605,13 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION dbms_metadata.get_type_ddl (text, text) IS 'This function fetches DDL of a user defined type';
+COMMENT ON FUNCTION dbms_metadata.get_type_ddl (text, text) IS 'This function retrieves DDL of a user defined type';
 
 REVOKE ALL ON FUNCTION dbms_metadata.get_type_ddl FROM PUBLIC;
+
+------------------------------------------------------------------------------
+-- DBMS_METADATA.GET_DEPENDENT_DDL utility functions
+------------------------------------------------------------------------------
 
 ----
 -- DBMS_METADATA.GET_SEQUENCE_DDL_OF_TABLE
@@ -645,7 +679,7 @@ END;
 $$
 LANGUAGE PLPGSQL;
 
-COMMENT ON FUNCTION dbms_metadata.get_sequence_ddl_of_table (text, text) IS 'This function fetches DDL of all dependent sequences on provided table';
+COMMENT ON FUNCTION dbms_metadata.get_sequence_ddl_of_table (text, text) IS 'This function retrieves DDL of all dependent sequences on provided table';
 
 REVOKE ALL ON FUNCTION dbms_metadata.get_sequence_ddl_of_table FROM PUBLIC;
 
@@ -716,7 +750,7 @@ END;
 $$
 LANGUAGE PLPGSQL;
 
-COMMENT ON FUNCTION dbms_metadata.get_constraints_ddl_of_table (text, text) IS 'This function fetches DDL of all constraints of provided table';
+COMMENT ON FUNCTION dbms_metadata.get_constraints_ddl_of_table (text, text) IS 'This function retrieves DDL of all constraints of provided table';
 
 REVOKE ALL ON FUNCTION dbms_metadata.get_constraints_ddl_of_table FROM PUBLIC;
 
@@ -769,7 +803,7 @@ END;
 $$
 LANGUAGE PLPGSQL;
 
-COMMENT ON FUNCTION dbms_metadata.get_ref_constraints_ddl_of_table (text, text) IS 'This function fetches DDL of all constraints of provided table';
+COMMENT ON FUNCTION dbms_metadata.get_ref_constraints_ddl_of_table (text, text) IS 'This function retrieves DDL of all constraints of provided table';
 
 REVOKE ALL ON FUNCTION dbms_metadata.get_ref_constraints_ddl_of_table FROM PUBLIC;
 
@@ -837,7 +871,7 @@ END;
 $$
 LANGUAGE PLPGSQL;
 
-COMMENT ON FUNCTION dbms_metadata.get_indexes_ddl_of_table (text, text) IS 'This function fetches DDL of all indexes of provided table';
+COMMENT ON FUNCTION dbms_metadata.get_indexes_ddl_of_table (text, text) IS 'This function retrieves DDL of all indexes of provided table';
 
 REVOKE ALL ON FUNCTION dbms_metadata.get_indexes_ddl_of_table FROM PUBLIC;
 
@@ -874,6 +908,38 @@ END;
 $$
 LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION dbms_metadata.get_triggers_ddl_of_table (text, text) IS 'This function fetches DDL of all triggers of provided table';
+COMMENT ON FUNCTION dbms_metadata.get_triggers_ddl_of_table (text, text) IS 'This function retrieves DDL of all triggers of provided table';
 
 REVOKE ALL ON FUNCTION dbms_metadata.get_triggers_ddl_of_table FROM PUBLIC;
+
+------------------------------------------------------------------------------
+-- DBMS_METADATA.GET_GRANTED_DDL utility functions
+------------------------------------------------------------------------------
+
+----
+-- DBMS_METADATA.GET_GRANTED_ROLES_DDL
+----
+CREATE OR REPLACE FUNCTION dbms_metadata.get_granted_roles_ddl(p_grantee text)
+RETURNS text AS $$
+DECLARE
+    l_grant_statements text;
+    l_role_info record;
+    l_sqlterminator_guc boolean;
+BEGIN
+    -- Getting values of transform params
+    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
+    
+    FOR l_role_info IN 
+        SELECT r.rolname AS role_name
+        FROM pg_roles r
+        JOIN pg_auth_members m ON r.oid = m.roleid
+        JOIN pg_roles u ON m.member = u.oid
+        WHERE u.rolname = p_grantee
+    LOOP
+        l_grant_statements := concat(l_grant_statements, 'GRANT ', l_role_info.role_name, ' TO ', p_grantee, CASE l_sqlterminator_guc WHEN TRUE THEN ';' ELSE '' END, E'\n');
+    END LOOP;
+    
+    RETURN l_grant_statements;
+END;
+$$ LANGUAGE plpgsql;
+

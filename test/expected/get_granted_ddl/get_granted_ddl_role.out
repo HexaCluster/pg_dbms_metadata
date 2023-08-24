@@ -1,0 +1,7 @@
+        get_granted_ddl        
+-------------------------------
+ GRANT role_test TO user_test +
+ GRANT role_test2 TO user_test+
+ 
+(1 row)
+
