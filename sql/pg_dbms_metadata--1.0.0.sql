@@ -287,6 +287,299 @@ COMMENT ON FUNCTION dbms_metadata.get_table_ddl (text, text) IS 'This function f
 REVOKE ALL ON FUNCTION dbms_metadata.get_table_ddl FROM PUBLIC;
 
 ----
+-- DBMS_METADATA.GET_VIEW_DDL
+----
+CREATE OR REPLACE FUNCTION dbms_metadata.get_view_ddl (view_schema text, view_name text)
+    RETURNS text
+    AS $$
+DECLARE
+    l_return text;
+    l_sqlterminator_guc boolean;
+BEGIN
+    -- Getting values of transform params
+    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
+
+    SELECT
+        'CREATE VIEW ' || quote_ident(view_schema) || '.' || quote_ident(view_name) || ' AS ' || pg_get_viewdef(quote_ident(view_schema) || '.' || quote_ident(view_name)) INTO STRICT l_return;
+    IF NOT l_sqlterminator_guc THEN
+        l_return := TRIM(TRAILING ';' FROM l_return);
+    END IF;
+    RETURN l_return;
+END;
+$$
+LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION dbms_metadata.get_view_ddl (text, text) IS 'This function fetches DDL of a view';
+
+REVOKE ALL ON FUNCTION dbms_metadata.get_view_ddl FROM PUBLIC;
+
+----
+-- DBMS_METADATA.GET_SEQUENCE_DDL
+----
+CREATE OR REPLACE FUNCTION dbms_metadata.get_sequence_ddl (p_schema text, p_sequence text)
+    RETURNS text
+    AS $$
+DECLARE
+    l_return text;
+    l_sqlterminator_guc boolean;
+BEGIN
+    -- Getting values of transform params
+    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
+
+    SELECT
+        'CREATE SEQUENCE ' || p_schema || '.' || sequencename || ' START WITH ' || start_value || ' INCREMENT BY ' || increment_by || ' MINVALUE ' || min_value || ' MAXVALUE ' || max_value || ' CACHE ' || cache_size || ' ' || CASE WHEN CYCLE IS TRUE THEN
+            'CYCLE'
+        ELSE
+            'NO CYCLE'
+        END || CASE l_sqlterminator_guc WHEN TRUE THEN ';' ELSE '' END INTO STRICT l_return
+    FROM
+        pg_sequences
+    WHERE
+        schemaname = p_schema
+        AND sequencename = p_sequence;
+    RETURN l_return;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RAISE EXCEPTION 'Sequence with name % not found in schema %', p_sequence, p_schema;
+END;
+$$
+LANGUAGE PLPGSQL;
+
+COMMENT ON FUNCTION dbms_metadata.get_sequence_ddl (text, text) IS 'This function fetches DDL of a sequence';
+
+REVOKE ALL ON FUNCTION dbms_metadata.get_sequence_ddl FROM PUBLIC;
+
+----
+-- DBMS_METADATA.GET_ROUTINE_DDL
+----
+CREATE OR REPLACE FUNCTION dbms_metadata.get_routine_ddl (schema_name text, routine_name text, routine_type text DEFAULT 'procedure')
+    RETURNS text
+    AS $$
+DECLARE
+    routine_code text;
+    routine_type_flag text;
+    l_sqlterminator_guc boolean;
+BEGIN
+    -- Getting values of transform params
+    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
+
+    CASE WHEN routine_type = 'PROCEDURE' THEN
+        routine_type_flag = 'p';
+    WHEN routine_type = 'FUNCTION' THEN
+        routine_type_flag = 'f';
+    END CASE;
+    SELECT
+        pg_get_functiondef(p.oid) INTO STRICT routine_code
+    FROM
+        pg_proc p
+        JOIN pg_namespace n ON p.pronamespace = n.oid
+    WHERE
+        n.nspname = schema_name
+        AND p.proname = routine_name
+        AND p.prokind = routine_type_flag; 
+    
+    IF l_sqlterminator_guc THEN
+        routine_code := concat(routine_code, ';');
+    END IF;
+    RETURN routine_code;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RAISE EXCEPTION '% with name % not found in schema %',routine_type, routine_name, schema_name;
+END;
+$$
+LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION dbms_metadata.get_routine_ddl (text, text, text) IS 'This function fetches DDL of a procedure/function';
+
+REVOKE ALL ON FUNCTION dbms_metadata.get_routine_ddl FROM PUBLIC;
+
+----
+-- DBMS_METADATA.GET_INDEX_DDL
+----
+CREATE OR REPLACE FUNCTION dbms_metadata.get_index_ddl(schema_name text, index_name text)
+RETURNS text AS
+$$
+DECLARE
+    index_def text;
+    l_sqlterminator_guc boolean;
+BEGIN
+    -- Getting values of transform params
+    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
+
+    SELECT pg_indexes.indexdef INTO STRICT index_def
+    FROM pg_indexes
+    WHERE indexname = index_name
+      AND schemaname = schema_name;
+    
+    IF l_sqlterminator_guc THEN
+        index_def := concat(index_def, ';');
+    END IF;    
+    RETURN index_def;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RAISE EXCEPTION 'Index with name % not found in schema %',index_name, schema_name;
+END;
+$$
+LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION dbms_metadata.get_index_ddl (text, text) IS 'This function fetches DDL of an index';
+
+REVOKE ALL ON FUNCTION dbms_metadata.get_index_ddl FROM PUBLIC;
+
+----
+-- DBMS_METADATA.GET_CONSTRAINT_DDL
+----
+CREATE OR REPLACE FUNCTION dbms_metadata.get_constraint_ddl(schema_name text, constraint_name text)
+RETURNS text AS
+$$
+DECLARE
+    alter_statement text;
+    l_sqlterminator_guc boolean;
+BEGIN
+    -- Getting values of transform params
+    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
+
+    SELECT format('ALTER TABLE %I.%I ADD CONSTRAINT %I %s', schema_name, cl.relname, conname, pg_catalog.pg_get_constraintdef(con.oid, TRUE))
+    INTO STRICT alter_statement
+    FROM pg_constraint con
+    JOIN pg_class cl ON con.conrelid = cl.oid
+    WHERE conname = constraint_name
+        AND contype <> 'f'
+        AND connamespace = (SELECT oid FROM pg_namespace WHERE nspname = schema_name);
+    
+    IF l_sqlterminator_guc THEN
+        alter_statement := concat(alter_statement, ';');
+    END IF; 
+    RETURN alter_statement;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RAISE EXCEPTION 'Constraint with name % not found in schema %',constraint_name, schema_name;
+END;
+$$
+LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION dbms_metadata.get_constraint_ddl (text, text) IS 'This function fetches DDL of a constraint';
+
+REVOKE ALL ON FUNCTION dbms_metadata.get_constraint_ddl FROM PUBLIC;
+
+----
+-- DBMS_METADATA.GET_REF_CONSTRAINT_DDL
+----
+CREATE OR REPLACE FUNCTION dbms_metadata.get_ref_constraint_ddl(schema_name text, constraint_name text)
+RETURNS text AS
+$$
+DECLARE
+    alter_statement text;
+    l_sqlterminator_guc boolean;
+BEGIN
+    -- Getting values of transform params
+    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
+
+    SELECT format('ALTER TABLE %I.%I ADD CONSTRAINT %I %s', schema_name, cl.relname, conname, pg_catalog.pg_get_constraintdef(con.oid, TRUE))
+    INTO STRICT alter_statement
+    FROM pg_constraint con
+    JOIN pg_class cl ON con.conrelid = cl.oid
+    WHERE conname = constraint_name
+        AND contype = 'f'
+        AND connamespace = (SELECT oid FROM pg_namespace WHERE nspname = schema_name);
+    
+    IF l_sqlterminator_guc THEN
+        alter_statement := concat(alter_statement, ';');
+    END IF; 
+    RETURN alter_statement;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RAISE EXCEPTION 'Referential constraint with name % not found in schema %',constraint_name, schema_name;
+END;
+$$
+LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION dbms_metadata.get_ref_constraint_ddl (text, text) IS 'This function fetches DDL of a constraint';
+
+REVOKE ALL ON FUNCTION dbms_metadata.get_ref_constraint_ddl FROM PUBLIC;
+
+----
+-- DBMS_METADATA.GET_TRIGGER_DDL
+----
+CREATE OR REPLACE FUNCTION dbms_metadata.get_trigger_ddl(schema_name text, trigger_name text)
+RETURNS text AS
+$$
+DECLARE
+    trigger_def text;
+    l_sqlterminator_guc boolean;
+BEGIN
+    -- Getting values of transform params
+    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
+
+    SELECT pg_get_triggerdef(t.oid)
+    INTO STRICT trigger_def
+    FROM pg_trigger t
+    JOIN pg_class c ON t.tgrelid = c.oid
+    JOIN pg_namespace n ON c.relnamespace = n.oid
+    WHERE t.tgname = trigger_name
+      AND n.nspname = schema_name;
+
+    IF l_sqlterminator_guc THEN
+        trigger_def := concat(trigger_def, ';');
+    END IF; 
+    RETURN trigger_def;
+-- In postgres there can be duplicate trigger names defined in one schema, as long as they belong to different tables
+-- So we need to check and error out if the trigger name is duplicated
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RAISE EXCEPTION 'Trigger with name % not found in schema %', trigger_name, schema_name;
+    WHEN TOO_MANY_ROWS THEN
+        RAISE EXCEPTION 'Duplicate triggers found with name % in schema %', trigger_name, schema_name;
+END;
+$$
+LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION dbms_metadata.get_trigger_ddl (text, text) IS 'This function fetches DDL of a trigger';
+
+REVOKE ALL ON FUNCTION dbms_metadata.get_trigger_ddl FROM PUBLIC;
+
+CREATE OR REPLACE FUNCTION dbms_metadata.get_type_ddl(p_schema_name text, p_type_name text)
+RETURNS text AS $$
+DECLARE
+    l_create_statement text;
+    l_attribute_list text;
+    l_attribute record;
+    l_sqlterminator_guc boolean;
+BEGIN
+    -- Getting values of transform params
+    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
+    
+    FOR l_attribute IN
+        SELECT a.attname, format_type(a.atttypid, a.atttypmod) AS format_type
+        FROM pg_attribute a
+        JOIN pg_class c ON a.attrelid = c.oid
+        JOIN pg_namespace n ON c.relnamespace = n.oid
+        WHERE c.relname = p_type_name AND n.nspname = p_schema_name AND a.attnum > 0
+        ORDER BY a.attnum
+    LOOP
+        l_attribute_list := concat(l_attribute_list, ' ', l_attribute.attname, ' ', l_attribute.format_type, ',');
+    END LOOP;
+
+    -- Construct the CREATE TYPE statement
+    IF l_attribute_list IS NULL THEN
+        RAISE EXCEPTION 'Type % does not exist in schema %.', p_type_name, p_schema_name;
+    ELSE
+        l_attribute_list := TRIM(TRAILING ',' FROM l_attribute_list);
+        l_create_statement := concat('CREATE TYPE ', p_schema_name, '.', p_type_name, ' AS (', l_attribute_list, ')');
+        IF l_sqlterminator_guc THEN
+            l_create_statement := concat(l_create_statement, ';');
+        END IF; 
+    END IF;
+
+    RETURN l_create_statement;
+END;
+$$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION dbms_metadata.get_type_ddl (text, text) IS 'This function fetches DDL of a user defined type';
+
+REVOKE ALL ON FUNCTION dbms_metadata.get_type_ddl FROM PUBLIC;
+
+----
 -- DBMS_METADATA.GET_SEQUENCE_DDL_OF_TABLE
 ----
 CREATE OR REPLACE FUNCTION dbms_metadata.get_sequence_ddl_of_table (p_schema text, p_table text)
@@ -584,296 +877,3 @@ LANGUAGE plpgsql;
 COMMENT ON FUNCTION dbms_metadata.get_triggers_ddl_of_table (text, text) IS 'This function fetches DDL of all triggers of provided table';
 
 REVOKE ALL ON FUNCTION dbms_metadata.get_triggers_ddl_of_table FROM PUBLIC;
-
-----
--- DBMS_METADATA.GET_VIEW_DDL
-----
-CREATE OR REPLACE FUNCTION dbms_metadata.get_view_ddl (view_schema text, view_name text)
-    RETURNS text
-    AS $$
-DECLARE
-    l_return text;
-    l_sqlterminator_guc boolean;
-BEGIN
-    -- Getting values of transform params
-    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
-
-    SELECT
-        'CREATE VIEW ' || quote_ident(view_schema) || '.' || quote_ident(view_name) || ' AS ' || pg_get_viewdef(quote_ident(view_schema) || '.' || quote_ident(view_name)) INTO STRICT l_return;
-    IF NOT l_sqlterminator_guc THEN
-        l_return := TRIM(TRAILING ';' FROM l_return);
-    END IF;
-    RETURN l_return;
-END;
-$$
-LANGUAGE plpgsql;
-
-COMMENT ON FUNCTION dbms_metadata.get_view_ddl (text, text) IS 'This function fetches DDL of a view';
-
-REVOKE ALL ON FUNCTION dbms_metadata.get_view_ddl FROM PUBLIC;
-
-----
--- DBMS_METADATA.GET_SEQUENCE_DDL
-----
-CREATE OR REPLACE FUNCTION dbms_metadata.get_sequence_ddl (p_schema text, p_sequence text)
-    RETURNS text
-    AS $$
-DECLARE
-    l_return text;
-    l_sqlterminator_guc boolean;
-BEGIN
-    -- Getting values of transform params
-    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
-
-    SELECT
-        'CREATE SEQUENCE ' || p_schema || '.' || sequencename || ' START WITH ' || start_value || ' INCREMENT BY ' || increment_by || ' MINVALUE ' || min_value || ' MAXVALUE ' || max_value || ' CACHE ' || cache_size || ' ' || CASE WHEN CYCLE IS TRUE THEN
-            'CYCLE'
-        ELSE
-            'NO CYCLE'
-        END || CASE l_sqlterminator_guc WHEN TRUE THEN ';' ELSE '' END INTO STRICT l_return
-    FROM
-        pg_sequences
-    WHERE
-        schemaname = p_schema
-        AND sequencename = p_sequence;
-    RETURN l_return;
-EXCEPTION
-    WHEN NO_DATA_FOUND THEN
-        RAISE EXCEPTION 'Sequence with name % not found in schema %', p_sequence, p_schema;
-END;
-$$
-LANGUAGE PLPGSQL;
-
-COMMENT ON FUNCTION dbms_metadata.get_sequence_ddl (text, text) IS 'This function fetches DDL of a sequence';
-
-REVOKE ALL ON FUNCTION dbms_metadata.get_sequence_ddl FROM PUBLIC;
-
-----
--- DBMS_METADATA.GET_ROUTINE_DDL
-----
-CREATE OR REPLACE FUNCTION dbms_metadata.get_routine_ddl (schema_name text, routine_name text, routine_type text DEFAULT 'procedure')
-    RETURNS text
-    AS $$
-DECLARE
-    routine_code text;
-    routine_type_flag text;
-    l_sqlterminator_guc boolean;
-BEGIN
-    -- Getting values of transform params
-    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
-
-    CASE WHEN routine_type = 'PROCEDURE' THEN
-        routine_type_flag = 'p';
-    WHEN routine_type = 'FUNCTION' THEN
-        routine_type_flag = 'f';
-    END CASE;
-    SELECT
-        pg_get_functiondef(p.oid) INTO STRICT routine_code
-    FROM
-        pg_proc p
-        JOIN pg_namespace n ON p.pronamespace = n.oid
-    WHERE
-        n.nspname = schema_name
-        AND p.proname = routine_name
-        AND p.prokind = routine_type_flag; 
-    
-    IF l_sqlterminator_guc THEN
-        routine_code := concat(routine_code, ';');
-    END IF;
-    RETURN routine_code;
-EXCEPTION
-    WHEN NO_DATA_FOUND THEN
-        RAISE EXCEPTION '% with name % not found in schema %',routine_type, routine_name, schema_name;
-END;
-$$
-LANGUAGE plpgsql;
-
-COMMENT ON FUNCTION dbms_metadata.get_routine_ddl (text, text, text) IS 'This function fetches DDL of a procedure/function';
-
-REVOKE ALL ON FUNCTION dbms_metadata.get_routine_ddl FROM PUBLIC;
-
-----
--- DBMS_METADATA.GET_INDEX_DDL
-----
-CREATE OR REPLACE FUNCTION dbms_metadata.get_index_ddl(schema_name text, index_name text)
-RETURNS text AS
-$$
-DECLARE
-    index_def text;
-    l_sqlterminator_guc boolean;
-BEGIN
-    -- Getting values of transform params
-    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
-
-    SELECT pg_indexes.indexdef INTO STRICT index_def
-    FROM pg_indexes
-    WHERE indexname = index_name
-      AND schemaname = schema_name;
-    
-    IF l_sqlterminator_guc THEN
-        index_def := concat(index_def, ';');
-    END IF;    
-    RETURN index_def;
-EXCEPTION
-    WHEN NO_DATA_FOUND THEN
-        RAISE EXCEPTION 'Index with name % not found in schema %',index_name, schema_name;
-END;
-$$
-LANGUAGE plpgsql;
-
-COMMENT ON FUNCTION dbms_metadata.get_index_ddl (text, text) IS 'This function fetches DDL of an index';
-
-REVOKE ALL ON FUNCTION dbms_metadata.get_index_ddl FROM PUBLIC;
-
-----
--- DBMS_METADATA.GET_CONSTRAINT_DDL
-----
-CREATE OR REPLACE FUNCTION dbms_metadata.get_constraint_ddl(schema_name text, constraint_name text)
-RETURNS text AS
-$$
-DECLARE
-    alter_statement text;
-    l_sqlterminator_guc boolean;
-BEGIN
-    -- Getting values of transform params
-    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
-
-    SELECT format('ALTER TABLE %I.%I ADD CONSTRAINT %I %s', schema_name, cl.relname, conname, pg_catalog.pg_get_constraintdef(con.oid, TRUE))
-    INTO STRICT alter_statement
-    FROM pg_constraint con
-    JOIN pg_class cl ON con.conrelid = cl.oid
-    WHERE conname = constraint_name
-        AND contype <> 'f'
-        AND connamespace = (SELECT oid FROM pg_namespace WHERE nspname = schema_name);
-    
-    IF l_sqlterminator_guc THEN
-        alter_statement := concat(alter_statement, ';');
-    END IF; 
-    RETURN alter_statement;
-EXCEPTION
-    WHEN NO_DATA_FOUND THEN
-        RAISE EXCEPTION 'Constraint with name % not found in schema %',constraint_name, schema_name;
-END;
-$$
-LANGUAGE plpgsql;
-
-COMMENT ON FUNCTION dbms_metadata.get_constraint_ddl (text, text) IS 'This function fetches DDL of a constraint';
-
-REVOKE ALL ON FUNCTION dbms_metadata.get_constraint_ddl FROM PUBLIC;
-
-----
--- DBMS_METADATA.GET_REF_CONSTRAINT_DDL
-----
-CREATE OR REPLACE FUNCTION dbms_metadata.get_ref_constraint_ddl(schema_name text, constraint_name text)
-RETURNS text AS
-$$
-DECLARE
-    alter_statement text;
-    l_sqlterminator_guc boolean;
-BEGIN
-    -- Getting values of transform params
-    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
-
-    SELECT format('ALTER TABLE %I.%I ADD CONSTRAINT %I %s', schema_name, cl.relname, conname, pg_catalog.pg_get_constraintdef(con.oid, TRUE))
-    INTO STRICT alter_statement
-    FROM pg_constraint con
-    JOIN pg_class cl ON con.conrelid = cl.oid
-    WHERE conname = constraint_name
-        AND contype = 'f'
-        AND connamespace = (SELECT oid FROM pg_namespace WHERE nspname = schema_name);
-    
-    IF l_sqlterminator_guc THEN
-        alter_statement := concat(alter_statement, ';');
-    END IF; 
-    RETURN alter_statement;
-EXCEPTION
-    WHEN NO_DATA_FOUND THEN
-        RAISE EXCEPTION 'Referential constraint with name % not found in schema %',constraint_name, schema_name;
-END;
-$$
-LANGUAGE plpgsql;
-
-COMMENT ON FUNCTION dbms_metadata.get_ref_constraint_ddl (text, text) IS 'This function fetches DDL of a constraint';
-
-REVOKE ALL ON FUNCTION dbms_metadata.get_ref_constraint_ddl FROM PUBLIC;
-
-----
--- DBMS_METADATA.GET_TRIGGER_DDL
-----
-CREATE OR REPLACE FUNCTION dbms_metadata.get_trigger_ddl(schema_name text, trigger_name text)
-RETURNS text AS
-$$
-DECLARE
-    trigger_def text;
-    l_sqlterminator_guc boolean;
-BEGIN
-    -- Getting values of transform params
-    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
-
-    SELECT pg_get_triggerdef(t.oid)
-    INTO STRICT trigger_def
-    FROM pg_trigger t
-    JOIN pg_class c ON t.tgrelid = c.oid
-    JOIN pg_namespace n ON c.relnamespace = n.oid
-    WHERE t.tgname = trigger_name
-      AND n.nspname = schema_name;
-
-    IF l_sqlterminator_guc THEN
-        trigger_def := concat(trigger_def, ';');
-    END IF; 
-    RETURN trigger_def;
--- In postgres there can be duplicate trigger names defined in one schema, as long as they belong to different tables
--- So we need to check and error out if the trigger name is duplicated
-EXCEPTION
-    WHEN NO_DATA_FOUND THEN
-        RAISE EXCEPTION 'Trigger with name % not found in schema %', trigger_name, schema_name;
-    WHEN TOO_MANY_ROWS THEN
-        RAISE EXCEPTION 'Duplicate triggers found with name % in schema %', trigger_name, schema_name;
-END;
-$$
-LANGUAGE plpgsql;
-
-COMMENT ON FUNCTION dbms_metadata.get_trigger_ddl (text, text) IS 'This function fetches DDL of a trigger';
-
-REVOKE ALL ON FUNCTION dbms_metadata.get_trigger_ddl FROM PUBLIC;
-
-CREATE OR REPLACE FUNCTION dbms_metadata.get_type_ddl(p_schema_name text, p_type_name text)
-RETURNS text AS $$
-DECLARE
-    l_create_statement text;
-    l_attribute_list text;
-    l_attribute record;
-    l_sqlterminator_guc boolean;
-BEGIN
-    -- Getting values of transform params
-    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
-    
-    FOR l_attribute IN
-        SELECT a.attname, format_type(a.atttypid, a.atttypmod) AS format_type
-        FROM pg_attribute a
-        JOIN pg_class c ON a.attrelid = c.oid
-        JOIN pg_namespace n ON c.relnamespace = n.oid
-        WHERE c.relname = p_type_name AND n.nspname = p_schema_name AND a.attnum > 0
-        ORDER BY a.attnum
-    LOOP
-        l_attribute_list := concat(l_attribute_list, ' ', l_attribute.attname, ' ', l_attribute.format_type, ',');
-    END LOOP;
-
-    -- Construct the CREATE TYPE statement
-    IF l_attribute_list IS NULL THEN
-        RAISE EXCEPTION 'Type % does not exist in schema %.', p_type_name, p_schema_name;
-    ELSE
-        l_attribute_list := TRIM(TRAILING ',' FROM l_attribute_list);
-        l_create_statement := concat('CREATE TYPE ', p_schema_name, '.', p_type_name, ' AS (', l_attribute_list, ')');
-        IF l_sqlterminator_guc THEN
-            l_create_statement := concat(l_create_statement, ';');
-        END IF; 
-    END IF;
-
-    RETURN l_create_statement;
-END;
-$$ LANGUAGE plpgsql;
-
-COMMENT ON FUNCTION dbms_metadata.get_type_ddl (text, text) IS 'This function fetches DDL of a user defined type';
-
-REVOKE ALL ON FUNCTION dbms_metadata.get_type_ddl FROM PUBLIC;
