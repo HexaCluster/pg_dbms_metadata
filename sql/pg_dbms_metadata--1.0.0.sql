@@ -938,7 +938,9 @@ BEGIN
     LOOP
         l_grant_statements := concat(l_grant_statements, 'GRANT ', l_role_info.role_name, ' TO ', p_grantee, CASE l_sqlterminator_guc WHEN TRUE THEN ';' ELSE '' END, E'\n');
     END LOOP;
-    
+    IF l_grant_statements IS NULL THEN
+        RAISE EXCEPTION 'role grant for grantee % not found', p_grantee;
+    END IF;    
     RETURN l_grant_statements;
 END;
 $$ LANGUAGE plpgsql;
