@@ -191,7 +191,7 @@ BEGIN
 
     -- Getting the OID of the table
     -- The following OID will be used to get the definition from sequences
-    EXECUTE 'SELECT ''' || p_schema || '.' || p_table || '''::regclass::oid' INTO l_oid;
+    SELECT dbms_metadata.get_object_oid(p_schema, p_table) INTO l_oid;
     
     -- Following SQL would get -
     -- 1. The list of columns of the Table in the order of the attnum
@@ -323,14 +323,17 @@ CREATE OR REPLACE FUNCTION dbms_metadata.get_view_ddl (view_schema text, view_na
     RETURNS text
     AS $$
 DECLARE
+    l_oid oid;
     l_return text;
     l_sqlterminator_guc boolean;
 BEGIN
     -- Getting values of transform params
     SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
 
-    SELECT
-        'CREATE VIEW ' || quote_ident(view_schema) || '.' || quote_ident(view_name) || ' AS ' || pg_get_viewdef(quote_ident(view_schema) || '.' || quote_ident(view_name)) INTO STRICT l_return;
+    SELECT dbms_metadata.get_object_oid(view_schema, view_name) INTO l_oid;
+
+    SELECT 'CREATE VIEW ' || view_schema || '.' || view_name || ' AS ' || pg_get_viewdef(l_oid) INTO STRICT l_return;
+
     IF NOT l_sqlterminator_guc THEN
         l_return := TRIM(TRAILING ';' FROM l_return);
     END IF;
@@ -704,7 +707,7 @@ BEGIN
     SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
 
     -- Getting the OID of the table
-    EXECUTE 'SELECT ''' || p_schema || '.' || p_table || '''::regclass::oid' INTO l_oid;
+    SELECT dbms_metadata.get_object_oid(p_schema, p_table) INTO l_oid;
     
     -- Get Constraints Definitions
     FOR l_const_rec IN (
@@ -774,7 +777,7 @@ BEGIN
     SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
 
     -- Getting the OID of the table
-    EXECUTE 'SELECT ''' || p_schema || '.' || p_table || '''::regclass::oid' INTO l_oid;
+    SELECT dbms_metadata.get_object_oid(p_schema, p_table) INTO l_oid;
     
     FOR l_fkey_rec IN (
         SELECT
@@ -824,7 +827,8 @@ BEGIN
     SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
 
     -- Getting the OID of the table
-    EXECUTE 'SELECT ''' || p_schema || '.' || p_table || '''::regclass::oid' INTO l_oid;
+    SELECT dbms_metadata.get_object_oid(p_schema, p_table) INTO l_oid;
+    
     -- Get Index Definitions
     FOR l_const_rec IN (
         SELECT
@@ -945,3 +949,54 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+------------------------------------------------------------------------------
+-- Other Utility functions
+------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION dbms_metadata.get_object_oid(p_schema text, p_table text)
+RETURNS oid AS $$
+DECLARE
+    l_table_oid oid;
+    l_schema_oid oid;
+BEGIN
+    SELECT dbms_metadata.get_schema_oid(p_schema) INTO l_schema_oid;
+    
+    SELECT
+        oid INTO STRICT l_table_oid
+    FROM
+        pg_class
+    WHERE
+        relname = p_table
+        AND relnamespace = l_schema_oid;
+
+    RETURN l_table_oid;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RAISE EXCEPTION 'Relation % does not exist in schema %', p_table, p_schema;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION dbms_metadata.get_schema_oid(p_schema text)
+RETURNS oid AS $$
+DECLARE
+    l_schema_oid oid;
+BEGIN
+    SELECT
+        oid
+    INTO STRICT l_schema_oid
+    FROM
+        pg_namespace
+    WHERE
+        nspname = p_schema;
+        
+    RETURN l_schema_oid;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RAISE EXCEPTION 'Schema % does not exist', p_schema;
+END;
+$$ LANGUAGE plpgsql;
+
+------------------------------------------------------------------------------
+-- GRANTS
+------------------------------------------------------------------------------
+GRANT USAGE ON SCHEMA dbms_metadata TO PUBLIC;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA dbms_metadata TO PUBLIC;
