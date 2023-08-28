@@ -1,6 +1,7 @@
 ----
 -- Script to create the objects of the pg_dbms_metadata extension
 ----
+
 ----
 -- DBMS_METADATA.GET_DDL
 ----
@@ -949,9 +950,17 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+COMMENT ON FUNCTION dbms_metadata.get_granted_roles_ddl (text) IS 'This function extracts the SQL statements to recreate roles granted to a specified grantee';
+
+REVOKE ALL ON FUNCTION dbms_metadata.get_granted_roles_ddl FROM PUBLIC;
+
 ------------------------------------------------------------------------------
 -- Other Utility functions
 ------------------------------------------------------------------------------
+
+----
+-- DBMS_METADATA.GET_OBJECT_OID
+----
 CREATE OR REPLACE FUNCTION dbms_metadata.get_object_oid(p_schema text, p_table text)
 RETURNS oid AS $$
 DECLARE
@@ -975,6 +984,13 @@ EXCEPTION
 END;
 $$ LANGUAGE plpgsql;
 
+COMMENT ON FUNCTION dbms_metadata.get_object_oid (text, text) IS 'This function returns oid of given object';
+
+REVOKE ALL ON FUNCTION dbms_metadata.get_object_oid FROM PUBLIC;
+
+----
+-- DBMS_METADATA.GET_SCHEMA_OID
+----
 CREATE OR REPLACE FUNCTION dbms_metadata.get_schema_oid(p_schema text)
 RETURNS oid AS $$
 DECLARE
@@ -994,6 +1010,10 @@ EXCEPTION
         RAISE EXCEPTION 'Schema % does not exist', p_schema;
 END;
 $$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION dbms_metadata.get_schema_oid (text) IS 'This function returns oid of given schema';
+
+REVOKE ALL ON FUNCTION dbms_metadata.get_schema_oid FROM PUBLIC;
 
 ------------------------------------------------------------------------------
 -- GRANTS
