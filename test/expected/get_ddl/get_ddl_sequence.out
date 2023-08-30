@@ -1,11 +1,11 @@
-                                                        get_ddl                                                         
-------------------------------------------------------------------------------------------------------------------------
- CREATE SEQUENCE gdmmm.attach_line START WITH 1 INCREMENT BY 1 MINVALUE 1 MAXVALUE 9223372036854775807 CACHE 1 NO CYCLE
+                                                         get_ddl                                                          
+--------------------------------------------------------------------------------------------------------------------------
+ CREATE SEQUENCE gdmmm."attach Line" START WITH 1 INCREMENT BY 1 MINVALUE 1 MAXVALUE 9223372036854775807 CACHE 1 NO CYCLE
 (1 row)
 
 SET
-                                                        get_ddl                                                         
-------------------------------------------------------------------------------------------------------------------------
- CREATE SEQUENCE gdmmm.attach_line START WITH 1 INCREMENT BY 1 MINVALUE 1 MAXVALUE 9223372036854775807 CACHE 1 NO CYCLE
+                                                         get_ddl                                                          
+--------------------------------------------------------------------------------------------------------------------------
+ CREATE SEQUENCE gdmmm."attach Line" START WITH 1 INCREMENT BY 1 MINVALUE 1 MAXVALUE 9223372036854775807 CACHE 1 NO CYCLE
 (1 row)
 

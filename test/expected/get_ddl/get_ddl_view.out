@@ -4,10 +4,22 @@
     FROM gdmmm.table_all
 (1 row)
 
+                                        get_ddl                                         
+----------------------------------------------------------------------------------------
+ CREATE VIEW gdmmm."Global fines" AS  SELECT "Sample unlogged table"."name of customer"+
+    FROM gdmmm."Sample unlogged table"
+(1 row)
+
 SET
                     get_ddl                    
 -----------------------------------------------
  CREATE VIEW gdmmm.gg_d AS  SELECT table_all.a+
     FROM table_all
+(1 row)
+
+                                        get_ddl                                         
+----------------------------------------------------------------------------------------
+ CREATE VIEW gdmmm."Global fines" AS  SELECT "Sample unlogged table"."name of customer"+
+    FROM "Sample unlogged table"
 (1 row)
 

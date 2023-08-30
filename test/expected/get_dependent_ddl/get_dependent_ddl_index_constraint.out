@@ -4,6 +4,12 @@
  
 (1 row)
 
+                                        get_dependent_ddl                                         
+--------------------------------------------------------------------------------------------------
+ CREATE INDEX "Gin_Index_Name" ON gdmmm."Sample unlogged table" USING spgist ("name of customer")+
+ 
+(1 row)
+
                              get_dependent_ddl                             
 ---------------------------------------------------------------------------
  ALTER TABLE gdmmm.table_all ADD CONSTRAINT table_all_pkey PRIMARY KEY (a)+
@@ -17,9 +23,16 @@
  
 (1 row)
 
-                                              get_dependent_ddl                                              
--------------------------------------------------------------------------------------------------------------
- ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT fk_customer FOREIGN KEY (id) REFERENCES gdmmm.table_all(a)+
+                                           get_dependent_ddl                                            
+--------------------------------------------------------------------------------------------------------
+ ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Sample unlogged table_pkey" PRIMARY KEY (id)+
+ ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Unique age" UNIQUE ("Age")                  +
+ 
+(1 row)
+
+                                               get_dependent_ddl                                               
+---------------------------------------------------------------------------------------------------------------
+ ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT "Fk_customer" FOREIGN KEY (id) REFERENCES gdmmm.table_all(a)+
  
 (1 row)
 
@@ -30,6 +43,12 @@ SET
  
 (1 row)
 
+                                     get_dependent_ddl                                      
+--------------------------------------------------------------------------------------------
+ CREATE INDEX "Gin_Index_Name" ON "Sample unlogged table" USING spgist ("name of customer")+
+ 
+(1 row)
+
                              get_dependent_ddl                             
 ---------------------------------------------------------------------------
  ALTER TABLE gdmmm.table_all ADD CONSTRAINT table_all_pkey PRIMARY KEY (a)+
@@ -40,6 +59,13 @@ SET
                             get_dependent_ddl                            
 -------------------------------------------------------------------------
  ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT child_uniq UNIQUE (id)+
+ 
+(1 row)
+
+                                           get_dependent_ddl                                            
+--------------------------------------------------------------------------------------------------------
+ ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Sample unlogged table_pkey" PRIMARY KEY (id)+
+ ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Unique age" UNIQUE ("Age")                  +
  
 (1 row)
 

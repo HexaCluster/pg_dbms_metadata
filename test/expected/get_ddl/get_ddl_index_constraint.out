@@ -3,14 +3,24 @@
  CREATE INDEX perf_index ON gdmmm.table_all USING btree (c)
 (1 row)
 
+                                             get_ddl                                              
+--------------------------------------------------------------------------------------------------
+ CREATE INDEX "Gin_Index_Name" ON gdmmm."Sample unlogged table" USING spgist ("name of customer")
+(1 row)
+
                                  get_ddl                                 
 -------------------------------------------------------------------------
  ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT child_uniq UNIQUE (id)
 (1 row)
 
-                                                   get_ddl                                                   
--------------------------------------------------------------------------------------------------------------
- ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT fk_customer FOREIGN KEY (id) REFERENCES gdmmm.table_all(a)
+                                       get_ddl                                        
+--------------------------------------------------------------------------------------
+ ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Unique age" UNIQUE ("Age")
+(1 row)
+
+                                                    get_ddl                                                    
+---------------------------------------------------------------------------------------------------------------
+ ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT "Fk_customer" FOREIGN KEY (id) REFERENCES gdmmm.table_all(a)
 (1 row)
 
 SET
@@ -19,8 +29,18 @@ SET
  CREATE INDEX perf_index ON gdmmm.table_all USING btree (c)
 (1 row)
 
+                                             get_ddl                                              
+--------------------------------------------------------------------------------------------------
+ CREATE INDEX "Gin_Index_Name" ON gdmmm."Sample unlogged table" USING spgist ("name of customer")
+(1 row)
+
                                  get_ddl                                 
 -------------------------------------------------------------------------
  ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT child_uniq UNIQUE (id)
+(1 row)
+
+                                       get_ddl                                        
+--------------------------------------------------------------------------------------
+ ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Unique age" UNIQUE ("Age")
 (1 row)
 

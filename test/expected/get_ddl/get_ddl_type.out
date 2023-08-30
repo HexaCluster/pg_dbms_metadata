@@ -1,6 +1,6 @@
-                                        get_ddl                                         
-----------------------------------------------------------------------------------------
- CREATE TYPE gdmmm.address AS ( city character varying, loc gdmmm.location, pin bigint)
+                                          get_ddl                                           
+--------------------------------------------------------------------------------------------
+ CREATE TYPE gdmmm."Address" AS ( "City" character varying, loc gdmmm.location, pin bigint)
 (1 row)
 
                                    get_ddl                                   
@@ -9,9 +9,9 @@
 (1 row)
 
 SET
-                                     get_ddl                                      
-----------------------------------------------------------------------------------
- CREATE TYPE gdmmm.address AS ( city character varying, loc location, pin bigint)
+                                       get_ddl                                        
+--------------------------------------------------------------------------------------
+ CREATE TYPE gdmmm."Address" AS ( "City" character varying, loc location, pin bigint)
 (1 row)
 
                                    get_ddl                                   

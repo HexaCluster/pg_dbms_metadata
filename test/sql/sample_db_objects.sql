@@ -4,9 +4,9 @@ CREATE SCHEMA gdmmm;
 -- Table 1
 ----
 CREATE TABLE gdmmm.table_all (
-    a serial PRIMARY KEY,
-    b int NOT NULL,
-    c varchar(20) DEFAULT 'def',
+    a serial PRIMARY KEY,   -- dependent sequence test
+    b int NOT NULL, -- NOT NULL test
+    c varchar(20) DEFAULT 'def',    -- default value test
     d int UNIQUE
 );
 
@@ -23,7 +23,7 @@ CREATE INDEX perf_index ON gdmmm.table_all (c);
 ----
 CREATE TABLE gdmmm.table_all_child (
     id int,
-    CONSTRAINT fk_customer FOREIGN KEY (id) REFERENCES gdmmm.table_all (a)
+    CONSTRAINT "Fk_customer" FOREIGN KEY (id) REFERENCES gdmmm.table_all (a)
 );
 
 ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT child_uniq UNIQUE(id);
@@ -34,10 +34,10 @@ ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT child_uniq UNIQUE(id);
 CREATE TABLE IF NOT EXISTS gdmmm.sales
 (
     sale_id integer NOT NULL,
-    sale_date date NOT NULL,
+    "Sale date" date NOT NULL,
     amount numeric,
-    CONSTRAINT sales_pkey PRIMARY KEY (sale_id, sale_date)
-) PARTITION BY RANGE (sale_date);
+    CONSTRAINT sales_pkey PRIMARY KEY (sale_id, "Sale date")
+) PARTITION BY RANGE ("Sale date");
 
 CREATE TABLE gdmmm.sales_february PARTITION OF gdmmm.sales
     FOR VALUES FROM ('2023-02-01') TO ('2023-03-01');
@@ -48,11 +48,35 @@ CREATE TABLE gdmmm.sales_january PARTITION OF gdmmm.sales
 ----
 -- Unlogged Table
 ----
-CREATE UNLOGGED TABLE gdmmm.sample_unlogged_table (
+CREATE UNLOGGED TABLE gdmmm."Sample unlogged table" (
     id serial PRIMARY KEY,
-    name varchar(255),
-    age integer
+    "name of customer" varchar(255),    -- quote ident test
+    "Age" integer
 );
+
+COMMENT ON COLUMN gdmmm."Sample unlogged table"."name of customer" IS 'This is a comment for the column.';
+
+CREATE INDEX "Gin_Index_Name" ON gdmmm."Sample unlogged table" USING spgist ("name of customer");
+
+ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Unique age" UNIQUE("Age"); 
+
+----
+-- View 1
+----
+CREATE OR REPLACE VIEW gdmmm.gg_d AS
+SELECT
+    table_all.a
+FROM
+    gdmmm.table_all;
+
+----
+-- View 2
+----
+CREATE OR REPLACE VIEW gdmmm."Global fines" AS
+SELECT
+    "Sample unlogged table"."name of customer"
+FROM
+    gdmmm."Sample unlogged table";
 
 ----
 -- Trigger 1
@@ -67,16 +91,10 @@ END;
 $$
 LANGUAGE plpgsql;
 
-CREATE TRIGGER trigger_double_salary
+CREATE TRIGGER "order"
     BEFORE INSERT ON gdmmm.table_all
     FOR EACH ROW
     EXECUTE FUNCTION gdmmm.double_salary ();
-
-CREATE OR REPLACE VIEW gdmmm.gg_d AS
-SELECT
-    table_all.a
-FROM
-    gdmmm.table_all;
 
 ----
 -- Trigger 2
@@ -97,7 +115,7 @@ EXECUTE FUNCTION gdmmm.edit_text();
 ----
 -- Sequence
 ----
-CREATE SEQUENCE IF NOT EXISTS gdmmm.attach_line
+CREATE SEQUENCE IF NOT EXISTS gdmmm."attach Line"
 INCREMENT 1 START 1
 MINVALUE 1
 MAXVALUE 9223372036854775807
@@ -114,8 +132,8 @@ CREATE TYPE gdmmm.location AS (
 ----
 -- Type 2
 ----
-CREATE TYPE gdmmm.address AS (
-    city character varying,
+CREATE TYPE gdmmm."Address" AS (
+    "City" character varying,
     loc gdmmm.location,
     pin bigint
 );
@@ -123,35 +141,35 @@ CREATE TYPE gdmmm.address AS (
 ----
 -- Function
 ----
-CREATE OR REPLACE FUNCTION gdmmm.merge_objects (first_val text, actual_finder gdmmm.address)
+CREATE OR REPLACE FUNCTION gdmmm."Merge objects" ("First_val" text, actual_finder gdmmm."Address")
     RETURNS text
     LANGUAGE 'plpgsql'
     COST 100 VOLATILE PARALLEL UNSAFE
     AS $BODY$
 BEGIN
-    RETURN first_val || actual_finder.city;
+    RETURN "First_val" || actual_finder."City";
 END
 $BODY$;
 
 ----
 -- Procedure
 ----
-CREATE OR REPLACE PROCEDURE gdmmm.join_entity (INOUT var_str text, INOUT num_low bigint, INOUT var_init text, INOUT mid_finder gdmmm.address)
+CREATE OR REPLACE PROCEDURE gdmmm.join_entity (INOUT var_str text, INOUT num_low bigint, INOUT var_init text, INOUT mid_finder gdmmm."Address")
 LANGUAGE 'plpgsql'
 AS $BODY$
 BEGIN
     num_low := mid_finder.pin;
-    var_init := var_str || ', ' || mid_finder.city;
+    var_init := var_str || ', ' || mid_finder."City";
 END
 $BODY$;
 
 ----
 -- Users and Roles
 ----
-CREATE ROLE role_test;
+CREATE ROLE "Role_test";
 
 CREATE ROLE role_test2;
 
-CREATE USER user_test;
+CREATE USER "user";
 
-GRANT role_test, role_test2 TO user_test;
+GRANT "Role_test", role_test2 TO "user";

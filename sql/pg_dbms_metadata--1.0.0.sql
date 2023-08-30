@@ -216,7 +216,7 @@ BEGIN
         string_agg(a.col, ',')
     FROM (
         SELECT
-            concat(a.attname || ' ' || format_type(a.atttypid, a.atttypmod), ' ', (
+            concat(quote_ident(a.attname) || ' ' || format_type(a.atttypid, a.atttypmod), ' ', (
                     SELECT
                         concat('DEFAULT ', substring(pg_catalog.pg_get_expr(d.adbin, d.adrelid)
                                 FOR 128))
@@ -246,7 +246,7 @@ BEGIN
     END IF;
     
     -- Add Table DDL with its columns and their datatypes to the Output
-    l_return := concat(l_return, '-- Table definition' || chr(10) || 'CREATE '|| CASE l_relpersistence WHEN 'u' THEN 'UNLOGGED ' ELSE '' END ||'TABLE ' || l_schema_name || '.' || l_table_name || ' (' || l_table_def || ')');
+    l_return := concat(l_return, '-- Table definition' || chr(10) || 'CREATE '|| CASE l_relpersistence WHEN 'u' THEN 'UNLOGGED ' ELSE '' END ||'TABLE ' || quote_ident(l_schema_name) || '.' || quote_ident(l_table_name) || ' (' || l_table_def || ')');
     
     IF l_partitioning_guc THEN
         -- Get partitioning info of table
@@ -257,7 +257,7 @@ BEGIN
                 WHEN pt.partstrat = 'h' THEN 'HASH'
                 ELSE null
             END AS partitioning_type,
-            string_agg(a.attname, ', ') AS partitioned_columns
+            string_agg(quote_ident(a.attname), ', ') AS partitioned_columns
         INTO l_partitioning_type, l_partitioned_columns
         FROM
             pg_class c
@@ -282,13 +282,13 @@ BEGIN
 
     -- Get comments on the Table if any
     SELECT
-        'COMMENT ON TABLE ' || l_schema_name || '.' || l_table_name || ' IS '''|| obj_description(l_oid) || '''' || CASE l_sqlterminator_guc WHEN TRUE THEN ';' ELSE '' END INTO l_tab_comments
+        'COMMENT ON TABLE ' || quote_ident(l_schema_name) || '.' || quote_ident(l_table_name) || ' IS '''|| obj_description(l_oid) || '''' || CASE l_sqlterminator_guc WHEN TRUE THEN ';' ELSE '' END INTO l_tab_comments
     FROM pg_class
     WHERE relkind = 'r';
     -- Get comments on the columns of the Table if any
     FOR l_col_rec IN (
         SELECT
-            'COMMENT ON COLUMN ' || l_schema_name || '.' || l_table_name || '.' || attname || ' IS '''|| pg_catalog.col_description(l_oid, attnum) || '''' || CASE l_sqlterminator_guc WHEN TRUE THEN ';' ELSE '' END
+            'COMMENT ON COLUMN ' || quote_ident(l_schema_name) || '.' || quote_ident(l_table_name) || '.' || quote_ident(attname) || ' IS '''|| pg_catalog.col_description(l_oid, attnum) || '''' || CASE l_sqlterminator_guc WHEN TRUE THEN ';' ELSE '' END
         FROM
             pg_catalog.pg_attribute
         WHERE
@@ -354,7 +354,7 @@ BEGIN
     WHERE c.oid = l_oid
         AND c.relkind = 'v';
 
-    SELECT 'CREATE VIEW ' || l_schema_name || '.' || l_view_name || ' AS ' || pg_get_viewdef(l_oid) INTO STRICT l_return;
+    SELECT 'CREATE VIEW ' || quote_ident(l_schema_name) || '.' || quote_ident(l_view_name) || ' AS ' || pg_get_viewdef(l_oid) INTO STRICT l_return;
 
     IF l_return IS NULL THEN
         RAISE EXCEPTION 'View % not found in schema %', view_name, view_schema;
@@ -392,7 +392,7 @@ BEGIN
     SELECT dbms_metadata.get_object_oid('SEQUENCE', p_schema, p_sequence) INTO STRICT l_oid;
 
     SELECT
-        'CREATE SEQUENCE ' || s.schemaname || '.' || s.sequencename || ' START WITH ' || start_value || ' INCREMENT BY ' || increment_by || ' MINVALUE ' || min_value || ' MAXVALUE ' || max_value || ' CACHE ' || cache_size || ' ' || CASE WHEN CYCLE IS TRUE THEN
+        'CREATE SEQUENCE ' || quote_ident(s.schemaname) || '.' || quote_ident(s.sequencename) || ' START WITH ' || start_value || ' INCREMENT BY ' || increment_by || ' MINVALUE ' || min_value || ' MAXVALUE ' || max_value || ' CACHE ' || cache_size || ' ' || CASE WHEN CYCLE IS TRUE THEN
             'CYCLE'
         ELSE
             'NO CYCLE'
@@ -653,7 +653,7 @@ BEGIN
         AND c.relkind = 'c';
     
     FOR l_attribute IN
-        SELECT a.attname, format_type(a.atttypid, a.atttypmod) AS format_type
+        SELECT quote_ident(a.attname) as attname, format_type(a.atttypid, a.atttypmod) AS format_type
         FROM pg_attribute a
         JOIN pg_class c ON a.attrelid = c.oid
         WHERE c.oid = l_oid
@@ -669,7 +669,7 @@ BEGIN
         RAISE EXCEPTION 'Type % does not exist in schema %.', p_type_name, p_schema_name;
     ELSE
         l_attribute_list := TRIM(TRAILING ',' FROM l_attribute_list);
-        l_create_statement := concat('CREATE TYPE ', l_schema_name, '.', l_type_name, ' AS (', l_attribute_list, ')');
+        l_create_statement := concat('CREATE TYPE ', quote_ident(l_schema_name), '.', quote_ident(l_type_name), ' AS (', l_attribute_list, ')');
         IF l_sqlterminator_guc THEN
             l_create_statement := concat(l_create_statement, ';');
         END IF; 
@@ -712,7 +712,7 @@ BEGIN
     --     for all the sequences belonging to the table
     FOR l_seq_rec IN (
         SELECT
-            'CREATE SEQUENCE ' || seq.schemaname || '.' || seq.sequencename || ' START WITH ' || seq.start_value || ' INCREMENT BY ' || seq.increment_by || ' MINVALUE ' || seq.min_value || ' MAXVALUE ' || seq.max_value || ' CACHE ' || seq.cache_size || ' ' || CASE WHEN seq.CYCLE IS TRUE THEN
+            'CREATE SEQUENCE ' || quote_ident(seq.schemaname) || '.' || quote_ident(seq.sequencename) || ' START WITH ' || seq.start_value || ' INCREMENT BY ' || seq.increment_by || ' MINVALUE ' || seq.min_value || ' MAXVALUE ' || seq.max_value || ' CACHE ' || seq.cache_size || ' ' || CASE WHEN seq.CYCLE IS TRUE THEN
                 'CYCLE'
             ELSE
                 'NO CYCLE'
@@ -873,7 +873,7 @@ BEGIN
     
     FOR l_fkey_rec IN (
         SELECT
-            'ALTER TABLE ' || nspname || '.' || relname || ' ADD CONSTRAINT ' || conname || ' ' || pg_get_constraintdef(pg_constraint.oid) || CASE l_sqlterminator_guc WHEN TRUE THEN ';' ELSE '' END
+            'ALTER TABLE ' || quote_ident(nspname) || '.' || quote_ident(relname) || ' ADD CONSTRAINT ' || quote_ident(conname) || ' ' || pg_get_constraintdef(pg_constraint.oid) || CASE l_sqlterminator_guc WHEN TRUE THEN ';' ELSE '' END
         FROM
             pg_constraint
             INNER JOIN pg_class ON conrelid = pg_class.oid
@@ -1037,7 +1037,7 @@ BEGIN
         JOIN pg_roles u ON m.member = u.oid
         WHERE u.rolname = p_grantee
     LOOP
-        l_grant_statements := concat(l_grant_statements, 'GRANT ', l_role_info.role_name, ' TO ', p_grantee, CASE l_sqlterminator_guc WHEN TRUE THEN ';' ELSE '' END, E'\n');
+        l_grant_statements := concat(l_grant_statements, 'GRANT ', quote_ident(l_role_info.role_name), ' TO ', quote_ident(p_grantee), CASE l_sqlterminator_guc WHEN TRUE THEN ';' ELSE '' END, E'\n');
     END LOOP;
     IF l_grant_statements IS NULL THEN
         RAISE EXCEPTION 'role grant for grantee % not found', p_grantee;
@@ -1074,7 +1074,7 @@ BEGIN
 
     IF p_object_type = ANY(l_pg_class_objs) THEN
         IF p_schema IS NULL THEN
-            SELECT p_object_name::regclass::oid INTO STRICT l_oid;
+            SELECT quote_ident(p_object_name)::regclass::oid INTO STRICT l_oid;
         ELSE
             SELECT
                 oid INTO STRICT l_oid
@@ -1086,7 +1086,7 @@ BEGIN
         END IF;
     ELSIF p_object_type = ANY(l_pg_proc_objs) THEN
         IF p_schema IS NULL THEN
-            SELECT p_object_name::regproc::oid INTO STRICT l_oid;
+            SELECT quote_ident(p_object_name)::regproc::oid INTO STRICT l_oid;
         ELSE
             SELECT 
                 oid INTO STRICT l_oid

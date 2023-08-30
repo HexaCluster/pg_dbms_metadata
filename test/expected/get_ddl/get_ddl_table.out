@@ -17,37 +17,42 @@
  
 (1 row)
 
-                                                   get_ddl                                                   
--------------------------------------------------------------------------------------------------------------
- -- Table definition                                                                                        +
- CREATE TABLE gdmmm.table_all_child (id integer )                                                           +
-                                                                                                            +
- -- Constraints                                                                                             +
- ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT child_uniq UNIQUE (id)                                    +
-                                                                                                            +
-                                                                                                            +
- -- Referential constraints                                                                                 +
- ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT fk_customer FOREIGN KEY (id) REFERENCES gdmmm.table_all(a)+
+                                                    get_ddl                                                    
+---------------------------------------------------------------------------------------------------------------
+ -- Table definition                                                                                          +
+ CREATE TABLE gdmmm.table_all_child (id integer )                                                             +
+                                                                                                              +
+ -- Constraints                                                                                               +
+ ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT child_uniq UNIQUE (id)                                      +
+                                                                                                              +
+                                                                                                              +
+ -- Referential constraints                                                                                   +
+ ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT "Fk_customer" FOREIGN KEY (id) REFERENCES gdmmm.table_all(a)+
  
 (1 row)
 
-                                                           get_ddl                                                           
------------------------------------------------------------------------------------------------------------------------------
- -- Table definition                                                                                                        +
- CREATE TABLE gdmmm.sales (sale_id integer  NOT NULL,sale_date date  NOT NULL,amount numeric ) PARTITION BY RANGE(sale_date)+
-                                                                                                                            +
- -- Constraints                                                                                                             +
- ALTER TABLE gdmmm.sales ADD CONSTRAINT sales_pkey PRIMARY KEY (sale_id, sale_date)                                         +
+                                                             get_ddl                                                             
+---------------------------------------------------------------------------------------------------------------------------------
+ -- Table definition                                                                                                            +
+ CREATE TABLE gdmmm.sales (sale_id integer  NOT NULL,"Sale date" date  NOT NULL,amount numeric ) PARTITION BY RANGE("Sale date")+
+                                                                                                                                +
+ -- Constraints                                                                                                                 +
+ ALTER TABLE gdmmm.sales ADD CONSTRAINT sales_pkey PRIMARY KEY (sale_id, "Sale date")                                           +
  
 (1 row)
 
-                                                                                      get_ddl                                                                                      
------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- -- Table definition                                                                                                                                                              +
- CREATE UNLOGGED TABLE gdmmm.sample_unlogged_table (id integer DEFAULT nextval('gdmmm.sample_unlogged_table_id_seq'::regclass) NOT NULL,name character varying(255) ,age integer )+
-                                                                                                                                                                                  +
- -- Constraints                                                                                                                                                                   +
- ALTER TABLE gdmmm.sample_unlogged_table ADD CONSTRAINT sample_unlogged_table_pkey PRIMARY KEY (id)                                                                               +
+                                                                                                get_ddl                                                                                                
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ -- Table definition                                                                                                                                                                                  +
+ CREATE UNLOGGED TABLE gdmmm."Sample unlogged table" (id integer DEFAULT nextval('gdmmm."Sample unlogged table_id_seq"'::regclass) NOT NULL,"name of customer" character varying(255) ,"Age" integer )+
+                                                                                                                                                                                                      +
+ -- Column comments                                                                                                                                                                                   +
+ COMMENT ON COLUMN gdmmm."Sample unlogged table"."name of customer" IS 'This is a comment for the column.'                                                                                            +
+                                                                                                                                                                                                      +
+                                                                                                                                                                                                      +
+ -- Constraints                                                                                                                                                                                       +
+ ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Sample unlogged table_pkey" PRIMARY KEY (id)                                                                                               +
+ ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Unique age" UNIQUE ("Age")                                                                                                                 +
  
 (1 row)
 
@@ -71,37 +76,42 @@ SET
  
 (1 row)
 
-                                                get_ddl                                                
--------------------------------------------------------------------------------------------------------
- -- Table definition                                                                                  +
- CREATE TABLE gdmmm.table_all_child (id integer )                                                     +
-                                                                                                      +
- -- Constraints                                                                                       +
- ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT child_uniq UNIQUE (id)                              +
-                                                                                                      +
-                                                                                                      +
- -- Referential constraints                                                                           +
- ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT fk_customer FOREIGN KEY (id) REFERENCES table_all(a)+
+                                                 get_ddl                                                 
+---------------------------------------------------------------------------------------------------------
+ -- Table definition                                                                                    +
+ CREATE TABLE gdmmm.table_all_child (id integer )                                                       +
+                                                                                                        +
+ -- Constraints                                                                                         +
+ ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT child_uniq UNIQUE (id)                                +
+                                                                                                        +
+                                                                                                        +
+ -- Referential constraints                                                                             +
+ ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT "Fk_customer" FOREIGN KEY (id) REFERENCES table_all(a)+
  
 (1 row)
 
-                                                           get_ddl                                                           
------------------------------------------------------------------------------------------------------------------------------
- -- Table definition                                                                                                        +
- CREATE TABLE gdmmm.sales (sale_id integer  NOT NULL,sale_date date  NOT NULL,amount numeric ) PARTITION BY RANGE(sale_date)+
-                                                                                                                            +
- -- Constraints                                                                                                             +
- ALTER TABLE gdmmm.sales ADD CONSTRAINT sales_pkey PRIMARY KEY (sale_id, sale_date)                                         +
+                                                             get_ddl                                                             
+---------------------------------------------------------------------------------------------------------------------------------
+ -- Table definition                                                                                                            +
+ CREATE TABLE gdmmm.sales (sale_id integer  NOT NULL,"Sale date" date  NOT NULL,amount numeric ) PARTITION BY RANGE("Sale date")+
+                                                                                                                                +
+ -- Constraints                                                                                                                 +
+ ALTER TABLE gdmmm.sales ADD CONSTRAINT sales_pkey PRIMARY KEY (sale_id, "Sale date")                                           +
  
 (1 row)
 
-                                                                                   get_ddl                                                                                   
------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- -- Table definition                                                                                                                                                        +
- CREATE UNLOGGED TABLE gdmmm.sample_unlogged_table (id integer DEFAULT nextval('sample_unlogged_table_id_seq'::regclass) NOT NULL,name character varying(255) ,age integer )+
-                                                                                                                                                                            +
- -- Constraints                                                                                                                                                             +
- ALTER TABLE gdmmm.sample_unlogged_table ADD CONSTRAINT sample_unlogged_table_pkey PRIMARY KEY (id)                                                                         +
+                                                                                             get_ddl                                                                                             
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ -- Table definition                                                                                                                                                                            +
+ CREATE UNLOGGED TABLE gdmmm."Sample unlogged table" (id integer DEFAULT nextval('"Sample unlogged table_id_seq"'::regclass) NOT NULL,"name of customer" character varying(255) ,"Age" integer )+
+                                                                                                                                                                                                +
+ -- Column comments                                                                                                                                                                             +
+ COMMENT ON COLUMN gdmmm."Sample unlogged table"."name of customer" IS 'This is a comment for the column.'                                                                                      +
+                                                                                                                                                                                                +
+                                                                                                                                                                                                +
+ -- Constraints                                                                                                                                                                                 +
+ ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Sample unlogged table_pkey" PRIMARY KEY (id)                                                                                         +
+ ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Unique age" UNIQUE ("Age")                                                                                                           +
  
 (1 row)
 
