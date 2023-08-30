@@ -24,3 +24,30 @@
  
 (1 row)
 
+SET
+                                        get_ddl                                        
+---------------------------------------------------------------------------------------
+ CREATE OR REPLACE FUNCTION gdmmm.merge_objects(first_val text, actual_finder address)+
+  RETURNS text                                                                        +
+  LANGUAGE plpgsql                                                                    +
+ AS $function$                                                                        +
+ BEGIN                                                                                +
+     RETURN first_val || actual_finder.city;                                          +
+ END                                                                                  +
+ $function$                                                                           +
+ 
+(1 row)
+
+                                                                get_ddl                                                                 
+----------------------------------------------------------------------------------------------------------------------------------------
+ CREATE OR REPLACE PROCEDURE gdmmm.join_entity(INOUT var_str text, INOUT num_low bigint, INOUT var_init text, INOUT mid_finder address)+
+  LANGUAGE plpgsql                                                                                                                     +
+ AS $procedure$                                                                                                                        +
+ BEGIN                                                                                                                                 +
+     num_low := mid_finder.pin;                                                                                                        +
+     var_init := var_str || ', ' || mid_finder.city;                                                                                   +
+ END                                                                                                                                   +
+ $procedure$                                                                                                                           +
+ 
+(1 row)
+

@@ -17,7 +17,9 @@ Information about the Oracle DBMS_metadata package can be found [here](https://d
 
 ## [Description](#description)
 
-This PostgreSQL extension provide compatibility with the DBMS_METADATA Oracle package's API to extract DDL. This extension only supports DDL extraction through GET_xxx functions. Support to FETCH_xxx functions and XML support is not added. The following functions and stored procedures are implemented:
+This PostgreSQL extension provide compatibility with the DBMS_METADATA Oracle package's API to extract DDL. This extension only supports DDL extraction through GET_xxx functions. Support to FETCH_xxx functions and XML support is not added. As of now, any user can get the ddl of any object in the database. Like Oracle, we have flexibility of omitting schema while trying to get ddl of an object. This will use search_path to find the object and gets required ddl. However when schema is ommitted, the current user should atleast have USAGE access on schema in which target object is present. 
+
+The following functions and stored procedures are implemented:
 
 * `GET_DDL()` This function extracts DDL of specified object.  
 * `GET_DEPENDENT_DDL()` This function extracts DDL of all dependent objects of specified type for a specified base object.
@@ -93,14 +95,14 @@ Syntax:
 dbms_metadata.get_ddl (
    object_type      IN text,
    name             IN text,
-   schema           IN text)
+   schema           IN text DEFAULT NULL)
    RETURNS text;
 ```
 Parameters:
 
 - object_type: Object type for which DDL is needed.
 - name: Name of object 
-- schema: Schema in which object is present
+- schema: Schema in which object is present. When schema is not provided search_path is used to find the object and get ddl.
 
 Example:
 ```
@@ -123,14 +125,14 @@ Syntax:
 dbms_metadata.get_dependent_ddl (
    object_type          IN text,
    base_object_name     IN text,
-   base_object_schema   IN text)
+   base_object_schema   IN text DEFAULT NULL)
    RETURNS text;
 ```
 Parameters:
 
 - object_type: Object type of dependent objects for which DDL is needed.
 - base_object_name: Name of base object 
-- base_object_schema: Schema in which base object is present
+- base_object_schema: Schema in which base object is present. When base object schema is not provided search_path is used to find the base object.
 
 Example:
 ```

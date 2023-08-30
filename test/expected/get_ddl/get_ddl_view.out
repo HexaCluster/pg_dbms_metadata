@@ -4,3 +4,10 @@
     FROM gdmmm.table_all
 (1 row)
 
+SET
+                    get_ddl                    
+-----------------------------------------------
+ CREATE VIEW gdmmm.gg_d AS  SELECT table_all.a+
+    FROM table_all
+(1 row)
+

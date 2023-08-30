@@ -5,7 +5,7 @@
 ----
 -- DBMS_METADATA.GET_DDL
 ----
-CREATE OR REPLACE FUNCTION dbms_metadata.get_ddl (object_type text, name text, schema text)
+CREATE OR REPLACE FUNCTION dbms_metadata.get_ddl (object_type text, name text, schema text DEFAULT NULL)
     RETURNS text
     AS $$
 DECLARE
@@ -48,7 +48,7 @@ REVOKE ALL ON FUNCTION dbms_metadata.get_ddl FROM PUBLIC;
 ----
 -- DBMS_METADATA.GET_DEPENDENT_DDL
 ----
-CREATE OR REPLACE FUNCTION dbms_metadata.get_dependent_ddl (object_type text, base_object_name text, base_object_schema text)
+CREATE OR REPLACE FUNCTION dbms_metadata.get_dependent_ddl (object_type text, base_object_name text, base_object_schema text DEFAULT NULL)
     RETURNS text
     AS $$
 DECLARE
@@ -169,6 +169,8 @@ CREATE OR REPLACE FUNCTION dbms_metadata.get_table_ddl (p_schema text, p_table t
     AS $$
 DECLARE
     l_oid oid;
+    l_schema_name text;
+    l_table_name text;
     l_table_def text;
     l_tab_comments text;
     l_col_rec text;
@@ -190,10 +192,21 @@ BEGIN
     SELECT current_setting('DBMS_METADATA.PARTITIONING')::boolean INTO l_partitioning_guc;
     SELECT current_setting('DBMS_METADATA.SEGMENT_ATTRIBUTES')::boolean INTO l_segment_attributes_guc;
 
-    -- Getting the OID of the table
-    -- The following OID will be used to get the definition from sequences
-    SELECT dbms_metadata.get_object_oid(p_schema, p_table) INTO l_oid;
-    
+    /*  Getting the OID of the table. We will make remaining code in this function independent of parameters passed. 
+        For ex: when schema passed is null
+        This sql statement is also used in many routines below */
+    SELECT dbms_metadata.get_object_oid('TABLE', p_schema, p_table) INTO l_oid;
+
+    /*  We will get schema and object names so that we will not depend on parameters passed. 
+        For ex: when schema passed is null 
+        Also we are checking oid returned is of desired object type
+        This sql statement is also used in many routines below */
+    SELECT n.nspname, c.relname INTO STRICT l_schema_name, l_table_name
+    FROM pg_class c
+    JOIN pg_namespace n ON c.relnamespace = n.oid
+    WHERE c.oid = l_oid
+        AND c.relkind in ('r', 'p');
+
     -- Following SQL would get -
     -- 1. The list of columns of the Table in the order of the attnum
     -- 2. Datatypes set to the columns
@@ -217,12 +230,10 @@ BEGIN
         FROM
             pg_attribute a
             JOIN pg_class b ON a.attrelid = b.oid
-            JOIN pg_namespace c ON b.relnamespace = c.oid
         WHERE
             a.attname NOT IN ('tableoid', 'cmax', 'xmax', 'cmin', 'xmin', 'ctid')
             AND attisdropped IS FALSE
-            AND b.relname = p_table
-            AND c.nspname = p_schema
+            AND b.oid = l_oid
         ORDER BY
             attnum) a INTO l_table_def;
 
@@ -235,7 +246,7 @@ BEGIN
     END IF;
     
     -- Add Table DDL with its columns and their datatypes to the Output
-    l_return := concat(l_return, '-- Table definition' || chr(10) || 'CREATE '|| CASE l_relpersistence WHEN 'u' THEN 'UNLOGGED ' ELSE '' END ||'TABLE ' || p_schema || '.' || p_table || ' (' || l_table_def || ')');
+    l_return := concat(l_return, '-- Table definition' || chr(10) || 'CREATE '|| CASE l_relpersistence WHEN 'u' THEN 'UNLOGGED ' ELSE '' END ||'TABLE ' || l_schema_name || '.' || l_table_name || ' (' || l_table_def || ')');
     
     IF l_partitioning_guc THEN
         -- Get partitioning info of table
@@ -253,8 +264,7 @@ BEGIN
         LEFT JOIN pg_partitioned_table pt ON c.oid = pt.partrelid
         LEFT JOIN pg_attribute a ON c.oid = a.attrelid
         WHERE
-            c.relnamespace = p_schema::regnamespace
-            AND c.relname = p_table
+            c.oid = l_oid
             AND a.attnum = ANY(pt.partattrs)
             AND a.attnum > 0
         GROUP BY c.relname, pt.partstrat;
@@ -272,13 +282,13 @@ BEGIN
 
     -- Get comments on the Table if any
     SELECT
-        'COMMENT ON TABLE ' || p_schema || '.' || p_table || ' IS '''|| obj_description(l_oid) || '''' || CASE l_sqlterminator_guc WHEN TRUE THEN ';' ELSE '' END INTO l_tab_comments
+        'COMMENT ON TABLE ' || l_schema_name || '.' || l_table_name || ' IS '''|| obj_description(l_oid) || '''' || CASE l_sqlterminator_guc WHEN TRUE THEN ';' ELSE '' END INTO l_tab_comments
     FROM pg_class
     WHERE relkind = 'r';
     -- Get comments on the columns of the Table if any
     FOR l_col_rec IN (
         SELECT
-            'COMMENT ON COLUMN ' || p_schema || '.' || p_table || '.' || attname || ' IS '''|| pg_catalog.col_description(l_oid, attnum) || '''' || CASE l_sqlterminator_guc WHEN TRUE THEN ';' ELSE '' END
+            'COMMENT ON COLUMN ' || l_schema_name || '.' || l_table_name || '.' || attname || ' IS '''|| pg_catalog.col_description(l_oid, attnum) || '''' || CASE l_sqlterminator_guc WHEN TRUE THEN ';' ELSE '' END
         FROM
             pg_catalog.pg_attribute
         WHERE
@@ -300,15 +310,18 @@ BEGIN
     l_return := concat(l_return, (chr(10) || chr(10) || '-- Column comments' || chr(10) || l_col_comments));
 
     IF l_constraints_guc THEN
-        l_return := concat(l_return, (chr(10) || chr(10) || '-- Constraints' || chr(10) || dbms_metadata.get_constraints_ddl_of_table(p_schema, p_table)));
+        l_return := concat(l_return, (chr(10) || chr(10) || '-- Constraints' || chr(10) || dbms_metadata.get_constraints_ddl_of_table(l_schema_name, l_table_name)));
     END IF;
 
     IF l_ref_constraints_guc THEN
-        l_return := concat(l_return, (chr(10) || chr(10) || '-- Referential constraints' || chr(10) || dbms_metadata.get_ref_constraints_ddl_of_table(p_schema, p_table)));
+        l_return := concat(l_return, (chr(10) || chr(10) || '-- Referential constraints' || chr(10) || dbms_metadata.get_ref_constraints_ddl_of_table(l_schema_name, l_table_name)));
     END IF;
 
     -- Return the final Table DDL prepared with Comments on Table and Columns
     RETURN l_return;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RAISE EXCEPTION 'Table with name % not found in schema %', p_table, p_schema;
 END;
 $$
 LANGUAGE PLPGSQL;
@@ -325,20 +338,35 @@ CREATE OR REPLACE FUNCTION dbms_metadata.get_view_ddl (view_schema text, view_na
     AS $$
 DECLARE
     l_oid oid;
+    l_schema_name text;
+    l_view_name text;
     l_return text;
     l_sqlterminator_guc boolean;
 BEGIN
     -- Getting values of transform params
     SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
 
-    SELECT dbms_metadata.get_object_oid(view_schema, view_name) INTO l_oid;
+    SELECT dbms_metadata.get_object_oid('VIEW', view_schema, view_name) INTO l_oid;
 
-    SELECT 'CREATE VIEW ' || view_schema || '.' || view_name || ' AS ' || pg_get_viewdef(l_oid) INTO STRICT l_return;
+    SELECT n.nspname, c.relname INTO STRICT l_schema_name, l_view_name
+    FROM pg_class c
+    JOIN pg_namespace n ON c.relnamespace = n.oid
+    WHERE c.oid = l_oid
+        AND c.relkind = 'v';
+
+    SELECT 'CREATE VIEW ' || l_schema_name || '.' || l_view_name || ' AS ' || pg_get_viewdef(l_oid) INTO STRICT l_return;
+
+    IF l_return IS NULL THEN
+        RAISE EXCEPTION 'View % not found in schema %', view_name, view_schema;
+    END IF;
 
     IF NOT l_sqlterminator_guc THEN
         l_return := TRIM(TRAILING ';' FROM l_return);
     END IF;
     RETURN l_return;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RAISE EXCEPTION 'View with name % not found in schema %', view_name, view_schema;
 END;
 $$
 LANGUAGE plpgsql;
@@ -354,23 +382,28 @@ CREATE OR REPLACE FUNCTION dbms_metadata.get_sequence_ddl (p_schema text, p_sequ
     RETURNS text
     AS $$
 DECLARE
+    l_oid oid;
     l_return text;
     l_sqlterminator_guc boolean;
 BEGIN
     -- Getting values of transform params
     SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
 
+    SELECT dbms_metadata.get_object_oid('SEQUENCE', p_schema, p_sequence) INTO STRICT l_oid;
+
     SELECT
-        'CREATE SEQUENCE ' || p_schema || '.' || sequencename || ' START WITH ' || start_value || ' INCREMENT BY ' || increment_by || ' MINVALUE ' || min_value || ' MAXVALUE ' || max_value || ' CACHE ' || cache_size || ' ' || CASE WHEN CYCLE IS TRUE THEN
+        'CREATE SEQUENCE ' || s.schemaname || '.' || s.sequencename || ' START WITH ' || start_value || ' INCREMENT BY ' || increment_by || ' MINVALUE ' || min_value || ' MAXVALUE ' || max_value || ' CACHE ' || cache_size || ' ' || CASE WHEN CYCLE IS TRUE THEN
             'CYCLE'
         ELSE
             'NO CYCLE'
         END || CASE l_sqlterminator_guc WHEN TRUE THEN ';' ELSE '' END INTO STRICT l_return
     FROM
-        pg_sequences
+        pg_sequences s
+    JOIN
+        pg_class c ON s.schemaname::regnamespace = c.relnamespace AND s.sequencename = c.relname
     WHERE
-        schemaname = p_schema
-        AND sequencename = p_sequence;
+        c.oid = l_oid
+        AND c.relkind = 'S';
     RETURN l_return;
 EXCEPTION
     WHEN NO_DATA_FOUND THEN
@@ -390,6 +423,7 @@ CREATE OR REPLACE FUNCTION dbms_metadata.get_routine_ddl (schema_name text, rout
     RETURNS text
     AS $$
 DECLARE
+    l_oid oid;
     routine_code text;
     routine_type_flag text;
     l_sqlterminator_guc boolean;
@@ -402,14 +436,15 @@ BEGIN
     WHEN routine_type = 'FUNCTION' THEN
         routine_type_flag = 'f';
     END CASE;
+
+    SELECT dbms_metadata.get_object_oid(routine_type, schema_name, routine_name) INTO l_oid;
+
     SELECT
         pg_get_functiondef(p.oid) INTO STRICT routine_code
     FROM
         pg_proc p
-        JOIN pg_namespace n ON p.pronamespace = n.oid
     WHERE
-        n.nspname = schema_name
-        AND p.proname = routine_name
+        p.oid = l_oid
         AND p.prokind = routine_type_flag; 
     
     IF l_sqlterminator_guc THEN
@@ -434,16 +469,22 @@ CREATE OR REPLACE FUNCTION dbms_metadata.get_index_ddl(schema_name text, index_n
 RETURNS text AS
 $$
 DECLARE
+    l_oid oid;
     index_def text;
     l_sqlterminator_guc boolean;
 BEGIN
     -- Getting values of transform params
     SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
 
-    SELECT pg_indexes.indexdef INTO STRICT index_def
-    FROM pg_indexes
-    WHERE indexname = index_name
-      AND schemaname = schema_name;
+    SELECT dbms_metadata.get_object_oid('INDEX', schema_name, index_name) INTO STRICT l_oid;
+
+    SELECT i.indexdef INTO STRICT index_def
+    FROM pg_indexes i
+    JOIN pg_class c 
+        ON i.schemaname::regnamespace = c.relnamespace AND i.indexname = c.relname
+    WHERE
+        c.oid = l_oid
+        AND c.relkind = 'i';
     
     IF l_sqlterminator_guc THEN
         index_def := concat(index_def, ';');
@@ -467,19 +508,24 @@ CREATE OR REPLACE FUNCTION dbms_metadata.get_constraint_ddl(schema_name text, co
 RETURNS text AS
 $$
 DECLARE
+    l_oid oid;
     alter_statement text;
     l_sqlterminator_guc boolean;
 BEGIN
     -- Getting values of transform params
     SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
 
-    SELECT format('ALTER TABLE %I.%I ADD CONSTRAINT %I %s', schema_name, cl.relname, conname, pg_catalog.pg_get_constraintdef(con.oid, TRUE))
+    SELECT dbms_metadata.get_object_oid('CONSTRAINT', schema_name, constraint_name) INTO l_oid;
+
+    SELECT format('ALTER TABLE %I.%I ADD CONSTRAINT %I %s', n.nspname, cl.relname, conname, pg_catalog.pg_get_constraintdef(con.oid, TRUE))
     INTO STRICT alter_statement
     FROM pg_constraint con
     JOIN pg_class cl ON con.conrelid = cl.oid
-    WHERE conname = constraint_name
-        AND contype <> 'f'
-        AND connamespace = (SELECT oid FROM pg_namespace WHERE nspname = schema_name);
+    JOIN pg_class cc ON con.connamespace = cc.relnamespace AND con.conname = cc.relname
+    JOIN pg_namespace n ON cc.relnamespace = n.oid 
+    WHERE cc.oid = l_oid
+        AND cc.relkind = 'i'
+        AND contype <> 'f';
     
     IF l_sqlterminator_guc THEN
         alter_statement := concat(alter_statement, ';');
@@ -506,6 +552,10 @@ DECLARE
     alter_statement text;
     l_sqlterminator_guc boolean;
 BEGIN
+    IF schema_name IS NULL THEN
+        RAISE EXCEPTION 'schema cannot be null for type REF_CONSTRAINT';
+    END IF;
+
     -- Getting values of transform params
     SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
 
@@ -524,6 +574,10 @@ BEGIN
 EXCEPTION
     WHEN NO_DATA_FOUND THEN
         RAISE EXCEPTION 'Referential constraint with name % not found in schema %',constraint_name, schema_name;
+    WHEN TOO_MANY_ROWS THEN
+        /* In postgres there can be duplicate ref constraint names defined in one schema, as long as they belong to different tables
+           So we need to check and error out if the ref constraint name is duplicated */
+        RAISE EXCEPTION 'Duplicate ref constraints found with name % in schema %', constraint_name, schema_name;
 END;
 $$
 LANGUAGE plpgsql;
@@ -542,6 +596,10 @@ DECLARE
     trigger_def text;
     l_sqlterminator_guc boolean;
 BEGIN
+    IF schema_name IS NULL THEN
+        RAISE EXCEPTION 'schema cannot be null for type TRIGGER';
+    END IF;
+
     -- Getting values of transform params
     SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
 
@@ -557,12 +615,12 @@ BEGIN
         trigger_def := concat(trigger_def, ';');
     END IF; 
     RETURN trigger_def;
--- In postgres there can be duplicate trigger names defined in one schema, as long as they belong to different tables
--- So we need to check and error out if the trigger name is duplicated
 EXCEPTION
     WHEN NO_DATA_FOUND THEN
         RAISE EXCEPTION 'Trigger with name % not found in schema %', trigger_name, schema_name;
     WHEN TOO_MANY_ROWS THEN
+        /* In postgres there can be duplicate trigger names defined in one schema, as long as they belong to different tables
+           So we need to check and error out if the trigger name is duplicated */
         RAISE EXCEPTION 'Duplicate triggers found with name % in schema %', trigger_name, schema_name;
 END;
 $$
@@ -575,6 +633,9 @@ REVOKE ALL ON FUNCTION dbms_metadata.get_trigger_ddl FROM PUBLIC;
 CREATE OR REPLACE FUNCTION dbms_metadata.get_type_ddl(p_schema_name text, p_type_name text)
 RETURNS text AS $$
 DECLARE
+    l_oid oid;
+    l_schema_name text;
+    l_type_name text;
     l_create_statement text;
     l_attribute_list text;
     l_attribute record;
@@ -583,12 +644,21 @@ BEGIN
     -- Getting values of transform params
     SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
     
+    SELECT dbms_metadata.get_object_oid('TYPE', p_schema_name, p_type_name) INTO l_oid;
+
+    SELECT n.nspname, c.relname INTO STRICT l_schema_name, l_type_name
+    FROM pg_class c
+    JOIN pg_namespace n ON c.relnamespace = n.oid
+    WHERE c.oid = l_oid
+        AND c.relkind = 'c';
+    
     FOR l_attribute IN
         SELECT a.attname, format_type(a.atttypid, a.atttypmod) AS format_type
         FROM pg_attribute a
         JOIN pg_class c ON a.attrelid = c.oid
-        JOIN pg_namespace n ON c.relnamespace = n.oid
-        WHERE c.relname = p_type_name AND n.nspname = p_schema_name AND a.attnum > 0
+        WHERE c.oid = l_oid
+            AND c.relkind = 'c' 
+            AND a.attnum > 0
         ORDER BY a.attnum
     LOOP
         l_attribute_list := concat(l_attribute_list, ' ', l_attribute.attname, ' ', l_attribute.format_type, ',');
@@ -599,13 +669,16 @@ BEGIN
         RAISE EXCEPTION 'Type % does not exist in schema %.', p_type_name, p_schema_name;
     ELSE
         l_attribute_list := TRIM(TRAILING ',' FROM l_attribute_list);
-        l_create_statement := concat('CREATE TYPE ', p_schema_name, '.', p_type_name, ' AS (', l_attribute_list, ')');
+        l_create_statement := concat('CREATE TYPE ', l_schema_name, '.', l_type_name, ' AS (', l_attribute_list, ')');
         IF l_sqlterminator_guc THEN
             l_create_statement := concat(l_create_statement, ';');
         END IF; 
     END IF;
 
     RETURN l_create_statement;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RAISE EXCEPTION 'Type % does not exist in schema %', p_type_name, p_schema;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -624,6 +697,7 @@ CREATE OR REPLACE FUNCTION dbms_metadata.get_sequence_ddl_of_table (p_schema tex
     RETURNS text
     AS $$
 DECLARE
+    l_oid oid;
     l_seq_rec text;
     l_sequences text;
     l_return text;
@@ -632,38 +706,35 @@ BEGIN
     -- Getting values of transform params
     SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
 
+    SELECT dbms_metadata.get_object_oid('TABLE', p_schema, p_table) INTO l_oid;
+
     -- Get the CREATE SEQUENCE statements
     --     for all the sequences belonging to the table
     FOR l_seq_rec IN (
         SELECT
-            'CREATE SEQUENCE ' || p_schema || '.' || sequencename || ' START WITH ' || start_value || ' INCREMENT BY ' || increment_by || ' MINVALUE ' || min_value || ' MAXVALUE ' || max_value || ' CACHE ' || cache_size || ' ' || CASE WHEN CYCLE IS TRUE THEN
+            'CREATE SEQUENCE ' || seq.schemaname || '.' || seq.sequencename || ' START WITH ' || seq.start_value || ' INCREMENT BY ' || seq.increment_by || ' MINVALUE ' || seq.min_value || ' MAXVALUE ' || seq.max_value || ' CACHE ' || seq.cache_size || ' ' || CASE WHEN seq.CYCLE IS TRUE THEN
                 'CYCLE'
             ELSE
                 'NO CYCLE'
             END || CASE l_sqlterminator_guc WHEN TRUE THEN ';' ELSE '' END
         FROM
-            pg_sequences
+            pg_class s
+            JOIN pg_namespace sn ON sn.oid = s.relnamespace
+            JOIN pg_depend d ON d.refobjid = s.oid
+                AND d.refclassid = 'pg_class'::regclass
+            JOIN pg_attrdef ad ON ad.oid = d.objid
+                AND d.classid = 'pg_attrdef'::regclass
+            JOIN pg_attribute col ON col.attrelid = ad.adrelid
+                AND col.attnum = ad.adnum
+            JOIN pg_class tbl ON tbl.oid = ad.adrelid
+            JOIN pg_namespace ts ON ts.oid = tbl.relnamespace
+            JOIN pg_sequences seq ON seq.schemaname = sn.nspname 
+                AND seq.sequencename = s.relname
         WHERE
-            schemaname = p_schema
-            AND sequencename IN (
-                SELECT
-                    s.relname AS sequence
-                FROM
-                    pg_class s
-                    JOIN pg_namespace sn ON sn.oid = s.relnamespace
-                    JOIN pg_depend d ON d.refobjid = s.oid
-                        AND d.refclassid = 'pg_class'::regclass
-                    JOIN pg_attrdef ad ON ad.oid = d.objid
-                        AND d.classid = 'pg_attrdef'::regclass
-                    JOIN pg_attribute col ON col.attrelid = ad.adrelid
-                        AND col.attnum = ad.adnum
-                    JOIN pg_class tbl ON tbl.oid = ad.adrelid
-                    JOIN pg_namespace ts ON ts.oid = tbl.relnamespace
-                WHERE
-                    s.relkind = 'S'
-                    AND d.deptype IN ('a', 'n')
-                    AND ts.nspname = p_schema
-                    AND tbl.relname = p_table))
+            s.relkind = 'S'
+            AND tbl.relkind in ('r', 'p')
+            AND d.deptype IN ('a', 'n')
+            AND tbl.oid = l_oid)
             LOOP
                 IF l_sequences IS NULL THEN
                     l_sequences := concat(l_seq_rec, chr(10));
@@ -697,6 +768,8 @@ CREATE OR REPLACE FUNCTION dbms_metadata.get_constraints_ddl_of_table (
     AS $$
 DECLARE
     l_oid oid;
+    l_schema_name text;
+    l_table_name text;
     l_const_rec record;
     l_constraints text;
     l_return text;
@@ -708,8 +781,14 @@ BEGIN
     SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
 
     -- Getting the OID of the table
-    SELECT dbms_metadata.get_object_oid(p_schema, p_table) INTO l_oid;
+    SELECT dbms_metadata.get_object_oid('TABLE', p_schema, p_table) INTO l_oid;
     
+    SELECT n.nspname, c.relname INTO STRICT l_schema_name, l_table_name
+    FROM pg_class c
+    JOIN pg_namespace n ON c.relnamespace = n.oid
+    WHERE c.oid = l_oid
+        AND c.relkind in ('r', 'p');
+
     -- Get Constraints Definitions
     FOR l_const_rec IN (
         SELECT
@@ -734,6 +813,7 @@ BEGIN
                 AND contype IN ('p', 'u', 'x', 'f'))
     WHERE
         c.oid = l_oid
+        AND c.relkind in ('r', 'p')
         AND c.oid = i.indrelid
         AND i.indexrelid = c2.oid
     ORDER BY
@@ -742,14 +822,21 @@ BEGIN
         c2.relname)
         LOOP
             IF l_const_rec.contype IS NOT NULL THEN
-                l_constraints := concat(l_constraints, format('ALTER TABLE %I.%I ADD CONSTRAINT %I ', p_schema, p_table, l_const_rec.conname), l_const_rec.pg_get_constraintdef, CASE l_sqlterminator_guc WHEN TRUE THEN ';' ELSE '' END, chr(10));
+                l_constraints := concat(l_constraints, format('ALTER TABLE %I.%I ADD CONSTRAINT %I ', l_schema_name, l_table_name, l_const_rec.conname), l_const_rec.pg_get_constraintdef, CASE l_sqlterminator_guc WHEN TRUE THEN ';' ELSE '' END, chr(10));
             END IF;
         END LOOP;
+    
+    IF l_constraints IS NULL THEN
+        RAISE EXCEPTION 'specified object of type CONSTRAINT not found';
+    END IF;
 
     l_return := l_constraints;
 
     -- Return the final DDL prepared
     RETURN l_return;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RAISE EXCEPTION 'Table with name % not found in schema %', p_table, p_schema;
 END;
 $$
 LANGUAGE PLPGSQL;
@@ -774,11 +861,15 @@ DECLARE
     l_fkey text;
     l_sqlterminator_guc boolean;
 BEGIN
+    IF p_schema IS NULL THEN
+        RAISE EXCEPTION 'schema cannot be null for type REF_CONSTRAINT';
+    END IF;
+
     -- Getting values of transform params
     SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
 
     -- Getting the OID of the table
-    SELECT dbms_metadata.get_object_oid(p_schema, p_table) INTO l_oid;
+    SELECT dbms_metadata.get_object_oid('TABLE', p_schema, p_table) INTO l_oid;
     
     FOR l_fkey_rec IN (
         SELECT
@@ -828,7 +919,7 @@ BEGIN
     SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
 
     -- Getting the OID of the table
-    SELECT dbms_metadata.get_object_oid(p_schema, p_table) INTO l_oid;
+    SELECT dbms_metadata.get_object_oid('TABLE', p_schema, p_table) INTO l_oid;
     
     -- Get Index Definitions
     FOR l_const_rec IN (
@@ -854,6 +945,7 @@ BEGIN
                 AND contype IN ('p', 'u', 'x', 'f'))
     WHERE
         c.oid = l_oid
+        AND c.relkind in ('r', 'p')
         AND c.oid = i.indrelid
         AND i.indexrelid = c2.oid
     ORDER BY
@@ -891,6 +983,10 @@ DECLARE
     l_return text := '';
     l_sqlterminator_guc boolean;
 BEGIN
+    IF schema_name IS NULL THEN
+        RAISE EXCEPTION 'schema cannot be null for type TRIGGER';
+    END IF;
+
     -- Getting values of transform params
     SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
 
@@ -905,7 +1001,7 @@ BEGIN
     LOOP
         l_return := l_return || trigger_def || CASE l_sqlterminator_guc WHEN TRUE THEN ';' ELSE '' END || E'\n\n';
     END LOOP;
-    IF l_return = '' THEN
+    IF l_return IS NULL OR l_return = '' THEN
         RAISE EXCEPTION 'specified object of type TRIGGER not found';
     END IF;
     RETURN l_return;
@@ -961,30 +1057,55 @@ REVOKE ALL ON FUNCTION dbms_metadata.get_granted_roles_ddl FROM PUBLIC;
 ----
 -- DBMS_METADATA.GET_OBJECT_OID
 ----
-CREATE OR REPLACE FUNCTION dbms_metadata.get_object_oid(p_schema text, p_table text)
+/*  This function may not return OID of given object type sometimes. For example if TABLE is passed as object_type, 
+    but actually there is no table with that name, but there is a view. This function will then return oid of the view. 
+    So object type check must be done after fetting oid from this function. */
+CREATE OR REPLACE FUNCTION dbms_metadata.get_object_oid(p_object_type text, p_schema text, p_object_name text)
 RETURNS oid AS $$
 DECLARE
-    l_table_oid oid;
+    l_oid oid;
     l_schema_oid oid;
+    l_pg_class_objs text[] := ARRAY['TABLE', 'VIEW', 'SEQUENCE', 'INDEX', 'CONSTRAINT', 'REF_CONSTRAINT', 'TYPE'];
+    l_pg_proc_objs text[] := ARRAY['PROCEDURE', 'FUNCTION'];
 BEGIN
-    SELECT dbms_metadata.get_schema_oid(p_schema) INTO l_schema_oid;
-    
-    SELECT
-        oid INTO STRICT l_table_oid
-    FROM
-        pg_class
-    WHERE
-        relname = p_table
-        AND relnamespace = l_schema_oid;
+    IF p_schema IS NOT NULL THEN
+        SELECT dbms_metadata.get_schema_oid(p_schema) INTO l_schema_oid;
+    END IF;
 
-    RETURN l_table_oid;
+    IF p_object_type = ANY(l_pg_class_objs) THEN
+        IF p_schema IS NULL THEN
+            SELECT p_object_name::regclass::oid INTO STRICT l_oid;
+        ELSE
+            SELECT
+                oid INTO STRICT l_oid
+            FROM
+                pg_class
+            WHERE
+                relname = p_object_name
+                AND relnamespace = l_schema_oid;
+        END IF;
+    ELSIF p_object_type = ANY(l_pg_proc_objs) THEN
+        IF p_schema IS NULL THEN
+            SELECT p_object_name::regproc::oid INTO STRICT l_oid;
+        ELSE
+            SELECT 
+                oid INTO STRICT l_oid
+            FROM 
+                pg_proc 
+            WHERE 
+                proname = p_object_name
+                AND pronamespace = l_schema_oid;
+        END IF;
+    END IF;
+
+    RETURN l_oid;
 EXCEPTION
     WHEN NO_DATA_FOUND THEN
-        RAISE EXCEPTION 'Relation % does not exist in schema %', p_table, p_schema;
+        RAISE EXCEPTION '% % does not exist in schema %', p_object_type, p_object_name, p_schema;
 END;
 $$ LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION dbms_metadata.get_object_oid (text, text) IS 'This function returns oid of given object';
+COMMENT ON FUNCTION dbms_metadata.get_object_oid (text, text, text) IS 'This function returns oid of given object';
 
 REVOKE ALL ON FUNCTION dbms_metadata.get_object_oid FROM PUBLIC;
 
