@@ -102,7 +102,7 @@ Parameters:
 
 - object_type: Object type for which DDL is needed.
 - name: Name of object 
-- schema: Schema in which object is present. When schema is not provided search_path is used to find the object and get ddl.
+- schema: Schema in which object is present. When schema is not provided search_path is used to find the object and get ddl. However schema cannot be NULL for object types TRIGGER, REF_CONSTRAINT.
 
 Example:
 ```

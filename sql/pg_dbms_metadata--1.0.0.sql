@@ -179,6 +179,8 @@ DECLARE
     l_partitioning_type text;
     l_partitioned_columns text;
     l_relpersistence text;
+    l_constraints text;
+    l_ref_constraints text;
     l_sqlterminator_guc boolean;
     l_constraints_guc boolean;
     l_ref_constraints_guc boolean;
@@ -309,19 +311,30 @@ BEGIN
     -- Append Comments on Columns of Table to the Output
     l_return := concat(l_return, (chr(10) || chr(10) || '-- Column comments' || chr(10) || l_col_comments));
 
-    IF l_constraints_guc THEN
-        l_return := concat(l_return, (chr(10) || chr(10) || '-- Constraints' || chr(10) || dbms_metadata.get_constraints_ddl_of_table(l_schema_name, l_table_name)));
-    END IF;
+    BEGIN
+        IF l_constraints_guc THEN
+            l_constraints := dbms_metadata.get_constraints_ddl_of_table(l_schema_name, l_table_name);
+            l_return := concat(l_return, (chr(10) || chr(10) || '-- Constraints' || chr(10) || l_constraints));
+        END IF;
 
-    IF l_ref_constraints_guc THEN
-        l_return := concat(l_return, (chr(10) || chr(10) || '-- Referential constraints' || chr(10) || dbms_metadata.get_ref_constraints_ddl_of_table(l_schema_name, l_table_name)));
-    END IF;
+        IF l_ref_constraints_guc THEN
+            l_ref_constraints := dbms_metadata.get_ref_constraints_ddl_of_table(l_schema_name, l_table_name);
+            l_return := concat(l_return, (chr(10) || chr(10) || '-- Referential constraints' || chr(10) || l_ref_constraints));
+        END IF;
+    EXCEPTION
+        WHEN OTHERS THEN
+            NULL;
+    END;
 
     -- Return the final Table DDL prepared with Comments on Table and Columns
     RETURN l_return;
 EXCEPTION
     WHEN NO_DATA_FOUND THEN
-        RAISE EXCEPTION 'Table with name % not found in schema %', p_table, p_schema;
+        IF p_schema IS NULL THEN
+            RAISE EXCEPTION 'Table with name % not found. Please provide schema name.', p_table;
+        ELSE
+            RAISE EXCEPTION 'Table with name % not found in schema %', p_table, p_schema;
+        END IF;
 END;
 $$
 LANGUAGE PLPGSQL;
@@ -366,7 +379,11 @@ BEGIN
     RETURN l_return;
 EXCEPTION
     WHEN NO_DATA_FOUND THEN
-        RAISE EXCEPTION 'View with name % not found in schema %', view_name, view_schema;
+        IF view_schema IS NULL THEN
+            RAISE EXCEPTION 'View with name % not found. Please provide schema name.', view_name;
+        ELSE
+            RAISE EXCEPTION 'View with name % not found in schema %', view_name, view_schema;
+        END IF;
 END;
 $$
 LANGUAGE plpgsql;
@@ -407,7 +424,11 @@ BEGIN
     RETURN l_return;
 EXCEPTION
     WHEN NO_DATA_FOUND THEN
-        RAISE EXCEPTION 'Sequence with name % not found in schema %', p_sequence, p_schema;
+        IF p_schema IS NULL THEN
+            RAISE EXCEPTION 'Sequence with name % not found. Please provide schema name.', p_sequence;
+        ELSE
+            RAISE EXCEPTION 'Sequence with name % not found in schema %', p_sequence, p_schema;
+        END IF;
 END;
 $$
 LANGUAGE PLPGSQL;
@@ -453,7 +474,11 @@ BEGIN
     RETURN routine_code;
 EXCEPTION
     WHEN NO_DATA_FOUND THEN
-        RAISE EXCEPTION '% with name % not found in schema %',routine_type, routine_name, schema_name;
+        IF schema_name IS NULL THEN
+            RAISE EXCEPTION '% with name % not found. Please provide schema name.', routine_type, routine_name;
+        ELSE
+            RAISE EXCEPTION '% with name % not found in schema %', routine_type, routine_name, schema_name;
+        END IF;
 END;
 $$
 LANGUAGE plpgsql;
@@ -492,7 +517,11 @@ BEGIN
     RETURN index_def;
 EXCEPTION
     WHEN NO_DATA_FOUND THEN
-        RAISE EXCEPTION 'Index with name % not found in schema %',index_name, schema_name;
+        IF schema_name IS NULL THEN
+            RAISE EXCEPTION 'Index with name % not found. Please provide schema name.',index_name;
+        ELSE
+            RAISE EXCEPTION 'Index with name % not found in schema %',index_name, schema_name;
+        END IF;
 END;
 $$
 LANGUAGE plpgsql;
@@ -533,7 +562,11 @@ BEGIN
     RETURN alter_statement;
 EXCEPTION
     WHEN NO_DATA_FOUND THEN
-        RAISE EXCEPTION 'Constraint with name % not found in schema %',constraint_name, schema_name;
+        IF schema_name IS NULL THEN
+            RAISE EXCEPTION 'Constraint with name % not found. Please provide schema name.',constraint_name;
+        ELSE
+            RAISE EXCEPTION 'Constraint with name % not found in schema %',constraint_name, schema_name;
+        END IF;
 END;
 $$
 LANGUAGE plpgsql;
@@ -678,7 +711,11 @@ BEGIN
     RETURN l_create_statement;
 EXCEPTION
     WHEN NO_DATA_FOUND THEN
-        RAISE EXCEPTION 'Type % does not exist in schema %', p_type_name, p_schema;
+        IF p_schema IS NULL THEN
+            RAISE EXCEPTION 'Type % does not exist. Please provide schema name.', p_type_name;
+        ELSE
+            RAISE EXCEPTION 'Type % does not exist in schema %', p_type_name, p_schema;
+        END IF;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -836,7 +873,11 @@ BEGIN
     RETURN l_return;
 EXCEPTION
     WHEN NO_DATA_FOUND THEN
-        RAISE EXCEPTION 'Table with name % not found in schema %', p_table, p_schema;
+        IF p_schema IS NULL THEN
+            RAISE EXCEPTION 'Table with name % not found. Please provide schema name.', p_table;
+        ELSE
+            RAISE EXCEPTION 'Table with name % not found in schema %', p_table, p_schema;
+        END IF;
 END;
 $$
 LANGUAGE PLPGSQL;
@@ -861,10 +902,6 @@ DECLARE
     l_fkey text;
     l_sqlterminator_guc boolean;
 BEGIN
-    IF p_schema IS NULL THEN
-        RAISE EXCEPTION 'schema cannot be null for type REF_CONSTRAINT';
-    END IF;
-
     -- Getting values of transform params
     SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
 
@@ -880,8 +917,8 @@ BEGIN
             INNER JOIN pg_namespace ON pg_namespace.oid = pg_class.relnamespace
         WHERE
             contype = 'f'
-            AND nspname = p_schema
-            AND relname = p_table)
+            AND pg_class.oid = l_oid
+            AND pg_class.relkind in ('r', 'p'))
         LOOP
             IF l_fkey IS NULL THEN
                 l_fkey := concat(l_fkey_rec, chr(10));
@@ -889,6 +926,10 @@ BEGIN
                 l_fkey := concat(l_fkey, l_fkey_rec, chr(10));
             END IF;
         END LOOP;
+
+    IF l_fkey IS NULL THEN
+        RAISE EXCEPTION 'specified object of type REF_CONSTRAINT not found';
+    END IF;
     
     l_return := l_fkey;
 
@@ -979,31 +1020,32 @@ CREATE OR REPLACE FUNCTION dbms_metadata.get_triggers_ddl_of_table(schema_name t
 RETURNS text AS
 $$
 DECLARE
+    l_oid oid;
     trigger_def text;
     l_return text := '';
     l_sqlterminator_guc boolean;
 BEGIN
-    IF schema_name IS NULL THEN
-        RAISE EXCEPTION 'schema cannot be null for type TRIGGER';
-    END IF;
-
     -- Getting values of transform params
     SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
+
+    -- Getting the OID of the table
+    SELECT dbms_metadata.get_object_oid('TABLE', schema_name, table_name) INTO l_oid;
 
     FOR trigger_def IN
         SELECT pg_get_triggerdef(t.oid)
         FROM pg_trigger t
         JOIN pg_class c ON t.tgrelid = c.oid
-        JOIN pg_namespace n ON c.relnamespace = n.oid
-        WHERE n.nspname = schema_name
-          AND c.relname = table_name
+        WHERE c.oid = l_oid
+          AND c.relkind in ('r', 'p')
           AND t.tgisinternal = FALSE -- Exclude system triggers
     LOOP
         l_return := l_return || trigger_def || CASE l_sqlterminator_guc WHEN TRUE THEN ';' ELSE '' END || E'\n\n';
     END LOOP;
+
     IF l_return IS NULL OR l_return = '' THEN
         RAISE EXCEPTION 'specified object of type TRIGGER not found';
     END IF;
+    
     RETURN l_return;
 END;
 $$
