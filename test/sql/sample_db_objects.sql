@@ -6,7 +6,7 @@ CREATE SCHEMA gdmmm;
 CREATE TABLE gdmmm.table_all (
     a serial PRIMARY KEY,
     b int NOT NULL,
-    c varchar(20),
+    c varchar(20) DEFAULT 'def',
     d int UNIQUE
 );
 
