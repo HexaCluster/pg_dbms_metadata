@@ -6,6 +6,8 @@ SELECT dbms_metadata.get_ddl('CONSTRAINT','child_uniq','gdmmm');
 
 SELECT dbms_metadata.get_ddl('CONSTRAINT','Unique age','gdmmm');
 
+SELECT dbms_metadata.get_ddl('CHECK_CONSTRAINT','check','gdmmm');
+
 SELECT dbms_metadata.get_ddl('REF_CONSTRAINT','Fk_customer','gdmmm');
 
 -- tests for schema as NULL

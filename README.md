@@ -76,7 +76,7 @@ This is especially useful for database in DBaas cloud services. To upgrade just 
 
 This function extracts DDL of database objects. 
 
-Below is list of currently supported object types:
+Below is list of currently supported object types. To get a ddl of a check constraint, unlike Oracle you need to use CHECK_CONSTRAINT object type. In Oracle, we will use the CONSTRAINT object type to get ddl of a check constraint.
 * TABLE 
 * VIEW 
 * SEQUENCE 
@@ -85,10 +85,9 @@ Below is list of currently supported object types:
 * TRIGGER
 * INDEX 
 * CONSTRAINT 
+* CHECK_CONSTRAINT
 * REF_CONSTRAINT
 * TYPE
-
-For TABLE type, the function extracts a basic table DDL without constraints and indexes. DDL will include list of columns of the table, along with datatypes, DEFAULT values and NOT NULL constraints, in the order of the attnum. DDL will also include comments on table and columns if any.
 
 Syntax:
 ```

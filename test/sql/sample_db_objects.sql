@@ -51,7 +51,9 @@ CREATE TABLE gdmmm.sales_january PARTITION OF gdmmm.sales
 CREATE UNLOGGED TABLE gdmmm."Sample unlogged table" (
     id serial PRIMARY KEY,
     "name of customer" varchar(255),    -- quote ident test
-    "Age" integer
+    "Age" integer,
+    "Birth_Date" DATE,
+    CONSTRAINT "check" CHECK ("Birth_Date" > '1900-01-01')
 );
 
 COMMENT ON COLUMN gdmmm."Sample unlogged table"."name of customer" IS 'This is a comment for the column.';

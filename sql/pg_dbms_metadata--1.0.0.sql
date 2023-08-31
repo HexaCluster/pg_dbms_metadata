@@ -28,6 +28,8 @@ BEGIN
         l_return := dbms_metadata.get_index_ddl (schema, name);
     WHEN 'CONSTRAINT' THEN
         l_return := dbms_metadata.get_constraint_ddl (schema, name);
+    WHEN 'CHECK_CONSTRAINT' THEN
+        l_return := dbms_metadata.get_check_constraint_ddl (schema, name);
     WHEN 'REF_CONSTRAINT' THEN
         l_return := dbms_metadata.get_ref_constraint_ddl (schema, name);
     WHEN 'TYPE' THEN
@@ -555,7 +557,7 @@ BEGIN
     WHERE cc.oid = l_oid
         AND cc.relkind = 'i'
         AND contype <> 'f';
-    
+
     IF l_sqlterminator_guc THEN
         alter_statement := concat(alter_statement, ';');
     END IF; 
@@ -574,6 +576,50 @@ LANGUAGE plpgsql;
 COMMENT ON FUNCTION dbms_metadata.get_constraint_ddl (text, text) IS 'This function retrieves DDL of a constraint';
 
 REVOKE ALL ON FUNCTION dbms_metadata.get_constraint_ddl FROM PUBLIC;
+
+----
+-- DBMS_METADATA.GET_CHECK_CONSTRAINT_DDL
+----
+CREATE OR REPLACE FUNCTION dbms_metadata.get_check_constraint_ddl(schema_name text, constraint_name text)
+RETURNS text AS
+$$
+DECLARE
+    alter_statement text;
+    l_sqlterminator_guc boolean;
+BEGIN
+    IF schema_name IS NULL THEN
+        RAISE EXCEPTION 'schema cannot be null for type CHECK_CONSTRAINT';
+    END IF;
+
+    -- Getting values of transform params
+    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
+
+    SELECT format('ALTER TABLE %I.%I ADD CONSTRAINT %I %s', schema_name, cl.relname, conname, pg_catalog.pg_get_constraintdef(con.oid, TRUE))
+    INTO STRICT alter_statement
+    FROM pg_constraint con
+    JOIN pg_class cl ON con.conrelid = cl.oid
+    WHERE conname = constraint_name
+        AND contype = 'c'
+        AND connamespace = (SELECT oid FROM pg_namespace WHERE nspname = schema_name);
+    
+    IF l_sqlterminator_guc THEN
+        alter_statement := concat(alter_statement, ';');
+    END IF; 
+    RETURN alter_statement;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RAISE EXCEPTION 'Check constraint with name % not found in schema %',constraint_name, schema_name;
+    WHEN TOO_MANY_ROWS THEN
+        /* In postgres there can be duplicate check constraint names defined in one schema, as long as they belong to different tables
+           So we need error out if the check constraint name is duplicated */
+        RAISE EXCEPTION 'Duplicate check constraints found with name % in schema %', constraint_name, schema_name;
+END;
+$$
+LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION dbms_metadata.get_check_constraint_ddl (text, text) IS 'This function retrieves DDL of a check constraint';
+
+REVOKE ALL ON FUNCTION dbms_metadata.get_check_constraint_ddl FROM PUBLIC;
 
 ----
 -- DBMS_METADATA.GET_REF_CONSTRAINT_DDL
@@ -615,7 +661,7 @@ END;
 $$
 LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION dbms_metadata.get_ref_constraint_ddl (text, text) IS 'This function retrieves DDL of a constraint';
+COMMENT ON FUNCTION dbms_metadata.get_ref_constraint_ddl (text, text) IS 'This function retrieves DDL of a referential constraint';
 
 REVOKE ALL ON FUNCTION dbms_metadata.get_ref_constraint_ddl FROM PUBLIC;
 
@@ -810,8 +856,8 @@ DECLARE
     l_const_rec record;
     l_constraints text;
     l_return text;
-    l_fkey_rec text;
-    l_fkey text;
+    l_check_con_ddls text := '';
+    l_constraint_rec record;
     l_sqlterminator_guc boolean;
 BEGIN
     -- Getting values of transform params
@@ -862,12 +908,24 @@ BEGIN
                 l_constraints := concat(l_constraints, format('ALTER TABLE %I.%I ADD CONSTRAINT %I ', l_schema_name, l_table_name, l_const_rec.conname), l_const_rec.pg_get_constraintdef, CASE l_sqlterminator_guc WHEN TRUE THEN ';' ELSE '' END, chr(10));
             END IF;
         END LOOP;
-    
-    IF l_constraints IS NULL THEN
+
+    -- Get check constraints
+    FOR l_constraint_rec IN (
+        SELECT pg_get_constraintdef(c.oid) AS constraint_def
+        FROM pg_constraint c
+        JOIN pg_class t ON c.conrelid = t.oid
+        WHERE t.oid = l_oid
+            AND t.relkind in ('r', 'p')
+            AND c.contype = 'c'
+    ) LOOP
+        l_check_con_ddls := l_check_con_ddls || E'ALTER TABLE ' || quote_ident(l_schema_name) || '.' || quote_ident(l_table_name) || ' ADD ' || l_constraint_rec.constraint_def || E';\n';
+    END LOOP;
+
+    l_return := l_constraints || chr(10) || l_check_con_ddls;
+
+    IF l_return IS NULL THEN
         RAISE EXCEPTION 'specified object of type CONSTRAINT not found';
     END IF;
-
-    l_return := l_constraints;
 
     -- Return the final DDL prepared
     RETURN l_return;

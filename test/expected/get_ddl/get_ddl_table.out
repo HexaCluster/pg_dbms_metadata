@@ -14,6 +14,7 @@
  -- Constraints                                                                                                                                                                              +
  ALTER TABLE gdmmm.table_all ADD CONSTRAINT table_all_pkey PRIMARY KEY (a)                                                                                                                   +
  ALTER TABLE gdmmm.table_all ADD CONSTRAINT table_all_d_key UNIQUE (d)                                                                                                                       +
+                                                                                                                                                                                             +
  
 (1 row)
 
@@ -24,6 +25,7 @@
                                                                                                               +
  -- Constraints                                                                                               +
  ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT child_uniq UNIQUE (id)                                      +
+                                                                                                              +
                                                                                                               +
                                                                                                               +
  -- Referential constraints                                                                                   +
@@ -38,21 +40,24 @@
                                                                                                                                 +
  -- Constraints                                                                                                                 +
  ALTER TABLE gdmmm.sales ADD CONSTRAINT sales_pkey PRIMARY KEY (sale_id, "Sale date")                                           +
+                                                                                                                                +
  
 (1 row)
 
-                                                                                                get_ddl                                                                                                
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- -- Table definition                                                                                                                                                                                  +
- CREATE UNLOGGED TABLE gdmmm."Sample unlogged table" (id integer DEFAULT nextval('gdmmm."Sample unlogged table_id_seq"'::regclass) NOT NULL,"name of customer" character varying(255) ,"Age" integer )+
-                                                                                                                                                                                                      +
- -- Column comments                                                                                                                                                                                   +
- COMMENT ON COLUMN gdmmm."Sample unlogged table"."name of customer" IS 'This is a comment for the column.'                                                                                            +
-                                                                                                                                                                                                      +
-                                                                                                                                                                                                      +
- -- Constraints                                                                                                                                                                                       +
- ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Sample unlogged table_pkey" PRIMARY KEY (id)                                                                                               +
- ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Unique age" UNIQUE ("Age")                                                                                                                 +
+                                                                                                         get_ddl                                                                                                          
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ -- Table definition                                                                                                                                                                                                     +
+ CREATE UNLOGGED TABLE gdmmm."Sample unlogged table" (id integer DEFAULT nextval('gdmmm."Sample unlogged table_id_seq"'::regclass) NOT NULL,"name of customer" character varying(255) ,"Age" integer ,"Birth_Date" date )+
+                                                                                                                                                                                                                         +
+ -- Column comments                                                                                                                                                                                                      +
+ COMMENT ON COLUMN gdmmm."Sample unlogged table"."name of customer" IS 'This is a comment for the column.'                                                                                                               +
+                                                                                                                                                                                                                         +
+                                                                                                                                                                                                                         +
+ -- Constraints                                                                                                                                                                                                          +
+ ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Sample unlogged table_pkey" PRIMARY KEY (id)                                                                                                                  +
+ ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Unique age" UNIQUE ("Age")                                                                                                                                    +
+                                                                                                                                                                                                                         +
+ ALTER TABLE gdmmm."Sample unlogged table" ADD CHECK (("Birth_Date" > '1900-01-01'::date));                                                                                                                              +
  
 (1 row)
 
@@ -73,6 +78,7 @@ SET
  -- Constraints                                                                                                                                                                        +
  ALTER TABLE gdmmm.table_all ADD CONSTRAINT table_all_pkey PRIMARY KEY (a)                                                                                                             +
  ALTER TABLE gdmmm.table_all ADD CONSTRAINT table_all_d_key UNIQUE (d)                                                                                                                 +
+                                                                                                                                                                                       +
  
 (1 row)
 
@@ -83,6 +89,7 @@ SET
                                                                                                         +
  -- Constraints                                                                                         +
  ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT child_uniq UNIQUE (id)                                +
+                                                                                                        +
                                                                                                         +
                                                                                                         +
  -- Referential constraints                                                                             +
@@ -97,21 +104,24 @@ SET
                                                                                                                                 +
  -- Constraints                                                                                                                 +
  ALTER TABLE gdmmm.sales ADD CONSTRAINT sales_pkey PRIMARY KEY (sale_id, "Sale date")                                           +
+                                                                                                                                +
  
 (1 row)
 
-                                                                                             get_ddl                                                                                             
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- -- Table definition                                                                                                                                                                            +
- CREATE UNLOGGED TABLE gdmmm."Sample unlogged table" (id integer DEFAULT nextval('"Sample unlogged table_id_seq"'::regclass) NOT NULL,"name of customer" character varying(255) ,"Age" integer )+
-                                                                                                                                                                                                +
- -- Column comments                                                                                                                                                                             +
- COMMENT ON COLUMN gdmmm."Sample unlogged table"."name of customer" IS 'This is a comment for the column.'                                                                                      +
-                                                                                                                                                                                                +
-                                                                                                                                                                                                +
- -- Constraints                                                                                                                                                                                 +
- ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Sample unlogged table_pkey" PRIMARY KEY (id)                                                                                         +
- ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Unique age" UNIQUE ("Age")                                                                                                           +
+                                                                                                      get_ddl                                                                                                       
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ -- Table definition                                                                                                                                                                                               +
+ CREATE UNLOGGED TABLE gdmmm."Sample unlogged table" (id integer DEFAULT nextval('"Sample unlogged table_id_seq"'::regclass) NOT NULL,"name of customer" character varying(255) ,"Age" integer ,"Birth_Date" date )+
+                                                                                                                                                                                                                   +
+ -- Column comments                                                                                                                                                                                                +
+ COMMENT ON COLUMN gdmmm."Sample unlogged table"."name of customer" IS 'This is a comment for the column.'                                                                                                         +
+                                                                                                                                                                                                                   +
+                                                                                                                                                                                                                   +
+ -- Constraints                                                                                                                                                                                                    +
+ ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Sample unlogged table_pkey" PRIMARY KEY (id)                                                                                                            +
+ ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Unique age" UNIQUE ("Age")                                                                                                                              +
+                                                                                                                                                                                                                   +
+ ALTER TABLE gdmmm."Sample unlogged table" ADD CHECK (("Birth_Date" > '1900-01-01'::date));                                                                                                                        +
  
 (1 row)
 

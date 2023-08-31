@@ -18,6 +18,11 @@
  ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Unique age" UNIQUE ("Age")
 (1 row)
 
+                                                  get_ddl                                                   
+------------------------------------------------------------------------------------------------------------
+ ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "check" CHECK ("Birth_Date" > '1900-01-01'::date)
+(1 row)
+
                                                     get_ddl                                                    
 ---------------------------------------------------------------------------------------------------------------
  ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT "Fk_customer" FOREIGN KEY (id) REFERENCES gdmmm.table_all(a)

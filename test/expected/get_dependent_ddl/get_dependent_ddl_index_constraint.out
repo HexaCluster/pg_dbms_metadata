@@ -14,12 +14,14 @@
 ---------------------------------------------------------------------------
  ALTER TABLE gdmmm.table_all ADD CONSTRAINT table_all_pkey PRIMARY KEY (a)+
  ALTER TABLE gdmmm.table_all ADD CONSTRAINT table_all_d_key UNIQUE (d)    +
+                                                                          +
  
 (1 row)
 
                             get_dependent_ddl                            
 -------------------------------------------------------------------------
  ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT child_uniq UNIQUE (id)+
+                                                                        +
  
 (1 row)
 
@@ -27,6 +29,8 @@
 --------------------------------------------------------------------------------------------------------
  ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Sample unlogged table_pkey" PRIMARY KEY (id)+
  ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Unique age" UNIQUE ("Age")                  +
+                                                                                                       +
+ ALTER TABLE gdmmm."Sample unlogged table" ADD CHECK (("Birth_Date" > '1900-01-01'::date));            +
  
 (1 row)
 
@@ -53,12 +57,14 @@ SET
 ---------------------------------------------------------------------------
  ALTER TABLE gdmmm.table_all ADD CONSTRAINT table_all_pkey PRIMARY KEY (a)+
  ALTER TABLE gdmmm.table_all ADD CONSTRAINT table_all_d_key UNIQUE (d)    +
+                                                                          +
  
 (1 row)
 
                             get_dependent_ddl                            
 -------------------------------------------------------------------------
  ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT child_uniq UNIQUE (id)+
+                                                                        +
  
 (1 row)
 
@@ -66,6 +72,8 @@ SET
 --------------------------------------------------------------------------------------------------------
  ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Sample unlogged table_pkey" PRIMARY KEY (id)+
  ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Unique age" UNIQUE ("Age")                  +
+                                                                                                       +
+ ALTER TABLE gdmmm."Sample unlogged table" ADD CHECK (("Birth_Date" > '1900-01-01'::date));            +
  
 (1 row)
 
