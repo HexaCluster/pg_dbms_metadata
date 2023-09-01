@@ -192,6 +192,7 @@ List of currently supported transform params
 | TABLE                 | PARTITIONING                          | boolean       | If TRUE, include partitioning clauses in the DDL. Defaults to TRUE. Unlike oracle, this extension does not support INDEX object type for this transform param as postgres indexes doesn't got any partitioning clauses.
 | TABLE                 | SEGMENT_ATTRIBUTES                    | boolean       | If TRUE, include segment attributes in the DDL. Defaults to TRUE. Currently only logging attribute is supported and only TABLE object type is supported for this transform param.
 | All objects           | DEFAULT                               | boolean       | Calling dbms_metadata.set_transform_param with this parameter set to TRUE has the effect of resetting all transform params to their default values. Setting this FALSE has no effect. There is no default.  
+| TABLE                 | STORAGE                               | boolean       | If TRUE, include storage parameters in the DDL. Defaults to TRUE. Currently only TABLE object type is supported for this transform param. Index DDL will always retrieved with storage parameters, if there are any.
 
 Example:
 ```

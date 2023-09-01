@@ -30,7 +30,7 @@
  ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Sample unlogged table_pkey" PRIMARY KEY (id)+
  ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Unique age" UNIQUE ("Age")                  +
                                                                                                        +
- ALTER TABLE gdmmm."Sample unlogged table" ADD CHECK (("Birth_Date" > '1900-01-01'::date));            +
+ ALTER TABLE gdmmm."Sample unlogged table" ADD CHECK (("Birth_Date" > '1900-01-01'::date))             +
  
 (1 row)
 
@@ -73,7 +73,7 @@ SET
  ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Sample unlogged table_pkey" PRIMARY KEY (id)+
  ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Unique age" UNIQUE ("Age")                  +
                                                                                                        +
- ALTER TABLE gdmmm."Sample unlogged table" ADD CHECK (("Birth_Date" > '1900-01-01'::date));            +
+ ALTER TABLE gdmmm."Sample unlogged table" ADD CHECK (("Birth_Date" > '1900-01-01'::date))             +
  
 (1 row)
 

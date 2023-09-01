@@ -8,6 +8,12 @@ CREATE TABLE gdmmm.table_all (
     b int NOT NULL, -- NOT NULL test
     c varchar(20) DEFAULT 'def',    -- default value test
     d int UNIQUE
+) WITH (
+    autovacuum_enabled = false,            
+    fillfactor = 70,                       
+    toast_tuple_target = 200,              
+    autovacuum_vacuum_scale_factor = 0.2,  
+    autovacuum_analyze_scale_factor = 0.1  
 );
 
 COMMENT ON TABLE gdmmm.table_all IS 'This is a comment for the table.';

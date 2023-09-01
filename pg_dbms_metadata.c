@@ -9,6 +9,7 @@ bool constraints;
 bool ref_constraints;
 bool partitioning;
 bool segment_attributes;
+bool storage;
 
 /* Default values to gucs */
 bool sqlterminator_default = false;
@@ -16,6 +17,7 @@ bool constraints_default = true;
 bool ref_constraints_default = true;
 bool partitioning_default = true;
 bool segment_attributes_default = true;
+bool storage_default = true;
 
 /* Declaring functions */
 void _PG_init(void);
@@ -53,6 +55,10 @@ Datum set_default_transform_params(PG_FUNCTION_ARGS) {
                     PGC_S_SESSION);
     SetConfigOption("dbms_metadata.segment_attributes", 
                     (segment_attributes_default == true) ? "true" : "false", 
+                    PGC_USERSET, 
+                    PGC_S_SESSION);
+    SetConfigOption("dbms_metadata.storage", 
+                    (storage == true) ? "true" : "false", 
                     PGC_USERSET, 
                     PGC_S_SESSION);
     PG_RETURN_NULL();
@@ -108,6 +114,16 @@ void set_default_gucs(void)
                             NULL,
                             &segment_attributes, 
                             segment_attributes_default, 
+                            PGC_USERSET,
+                            0, 
+                            NULL, 
+                            NULL, 
+                            NULL);
+    DefineCustomBoolVariable("dbms_metadata.storage", 
+                            "If TRUE, include storage clauses in the DDL. Ignored if SEGMENT_ATTRIBUTES is FALSE.",
+                            NULL,
+                            &storage, 
+                            storage_default, 
                             PGC_USERSET,
                             0, 
                             NULL, 

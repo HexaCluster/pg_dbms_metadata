@@ -131,7 +131,7 @@ REVOKE ALL ON PROCEDURE dbms_metadata.set_transform_param FROM PUBLIC;
 CREATE OR REPLACE PROCEDURE dbms_metadata.set_transform_param(name text, value boolean DEFAULT true)
     AS $$
 DECLARE
-    l_allowed_names text[] := ARRAY['DEFAULT', 'SQLTERMINATOR', 'CONSTRAINTS', 'REF_CONSTRAINTS', 'PARTITIONING', 'SEGMENT_ATTRIBUTES'];
+    l_allowed_names text[] := ARRAY['DEFAULT', 'SQLTERMINATOR', 'CONSTRAINTS', 'REF_CONSTRAINTS', 'PARTITIONING', 'SEGMENT_ATTRIBUTES', 'STORAGE'];
 BEGIN
     IF NOT name = ANY(l_allowed_names) THEN
         RAISE EXCEPTION 'Name:% is not supported for value as boolean', name;
@@ -180,6 +180,7 @@ DECLARE
     l_return text;
     l_partitioning_type text;
     l_partitioned_columns text;
+    l_storage_options text;
     l_relpersistence text;
     l_constraints text;
     l_ref_constraints text;
@@ -188,6 +189,7 @@ DECLARE
     l_ref_constraints_guc boolean;
     l_partitioning_guc boolean;
     l_segment_attributes_guc boolean;
+    l_storage_guc boolean;
 BEGIN
     -- Getting values of transform params
     SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
@@ -195,6 +197,7 @@ BEGIN
     SELECT current_setting('DBMS_METADATA.REF_CONSTRAINTS')::boolean INTO l_ref_constraints_guc;
     SELECT current_setting('DBMS_METADATA.PARTITIONING')::boolean INTO l_partitioning_guc;
     SELECT current_setting('DBMS_METADATA.SEGMENT_ATTRIBUTES')::boolean INTO l_segment_attributes_guc;
+    SELECT current_setting('DBMS_METADATA.STORAGE')::boolean INTO l_storage_guc;
 
     /*  Getting the OID of the table. We will make remaining code in this function independent of parameters passed. 
         For ex: when schema passed is null
@@ -276,6 +279,17 @@ BEGIN
         -- Add partitioning if any
         IF l_partitioning_type IS NOT NULL THEN
             l_return := concat(l_return, ' PARTITION BY ' || l_partitioning_type || '(' || l_partitioned_columns || ')');
+        END IF;
+    END IF;
+
+    IF l_segment_attributes_guc AND l_storage_guc THEN
+        -- Get storage parameters
+        SELECT array_to_string(reloptions, ',') INTO l_storage_options
+        FROM pg_class
+        WHERE oid = l_oid;
+
+        IF l_storage_options IS NOT NULL THEN
+            l_return := concat(l_return, ' WITH (' || l_storage_options || ')');
         END IF;
     END IF;
 
@@ -605,6 +619,7 @@ BEGIN
     IF l_sqlterminator_guc THEN
         alter_statement := concat(alter_statement, ';');
     END IF; 
+    
     RETURN alter_statement;
 EXCEPTION
     WHEN NO_DATA_FOUND THEN
@@ -918,7 +933,7 @@ BEGIN
             AND t.relkind in ('r', 'p')
             AND c.contype = 'c'
     ) LOOP
-        l_check_con_ddls := l_check_con_ddls || E'ALTER TABLE ' || quote_ident(l_schema_name) || '.' || quote_ident(l_table_name) || ' ADD ' || l_constraint_rec.constraint_def || E';\n';
+        l_check_con_ddls := l_check_con_ddls || E'ALTER TABLE ' || quote_ident(l_schema_name) || '.' || quote_ident(l_table_name) || ' ADD ' || l_constraint_rec.constraint_def || CASE l_sqlterminator_guc WHEN TRUE THEN ';' ELSE '' END || E'\n';
     END LOOP;
 
     l_return := l_constraints || chr(10) || l_check_con_ddls;
