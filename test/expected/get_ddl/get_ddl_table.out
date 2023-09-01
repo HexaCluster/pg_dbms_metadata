@@ -1,127 +1,94 @@
-                                                                                                                                                                 get_ddl                                                                                                                                                                  
-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- -- Table definition                                                                                                                                                                                                                                                                                                                     +
- CREATE TABLE gdmmm.table_all (a integer DEFAULT nextval('gdmmm.table_all_a_seq'::regclass) NOT NULL,b integer  NOT NULL,c character varying(20) DEFAULT 'def'::character varying,d integer ) WITH (autovacuum_enabled=false,fillfactor=70,toast_tuple_target=200,autovacuum_vacuum_scale_factor=0.2,autovacuum_analyze_scale_factor=0.1)+
-                                                                                                                                                                                                                                                                                                                                         +
- -- Table comments                                                                                                                                                                                                                                                                                                                       +
- COMMENT ON TABLE gdmmm.table_all IS 'This is a comment for the table.'                                                                                                                                                                                                                                                                  +
-                                                                                                                                                                                                                                                                                                                                         +
- -- Column comments                                                                                                                                                                                                                                                                                                                      +
- COMMENT ON COLUMN gdmmm.table_all.a IS 'This is a comment for the column.'                                                                                                                                                                                                                                                              +
- COMMENT ON COLUMN gdmmm.table_all.b IS 'This is a comment for the column.'                                                                                                                                                                                                                                                              +
-                                                                                                                                                                                                                                                                                                                                         +
-                                                                                                                                                                                                                                                                                                                                         +
- -- Constraints                                                                                                                                                                                                                                                                                                                          +
- ALTER TABLE gdmmm.table_all ADD CONSTRAINT table_all_pkey PRIMARY KEY (a)                                                                                                                                                                                                                                                               +
- ALTER TABLE gdmmm.table_all ADD CONSTRAINT table_all_d_key UNIQUE (d)                                                                                                                                                                                                                                                                   +
-                                                                                                                                                                                                                                                                                                                                         +
- 
-(1 row)
+-- Table definition
+CREATE TABLE gdmmm.table_all (a integer DEFAULT nextval('gdmmm.table_all_a_seq'::regclass) NOT NULL,b integer  NOT NULL,c character varying(20) DEFAULT 'def'::character varying,d integer ) WITH (autovacuum_enabled=false,fillfactor=70,toast_tuple_target=200,autovacuum_vacuum_scale_factor=0.2,autovacuum_analyze_scale_factor=0.1)
 
-                                                    get_ddl                                                    
----------------------------------------------------------------------------------------------------------------
- -- Table definition                                                                                          +
- CREATE TABLE gdmmm.table_all_child (id integer )                                                             +
-                                                                                                              +
- -- Constraints                                                                                               +
- ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT child_uniq UNIQUE (id)                                      +
-                                                                                                              +
-                                                                                                              +
-                                                                                                              +
- -- Referential constraints                                                                                   +
- ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT "Fk_customer" FOREIGN KEY (id) REFERENCES gdmmm.table_all(a)+
- 
-(1 row)
+-- Table comments
+COMMENT ON TABLE gdmmm.table_all IS 'This is a comment for the table.'
 
-                                                             get_ddl                                                             
----------------------------------------------------------------------------------------------------------------------------------
- -- Table definition                                                                                                            +
- CREATE TABLE gdmmm.sales (sale_id integer  NOT NULL,"Sale date" date  NOT NULL,amount numeric ) PARTITION BY RANGE("Sale date")+
-                                                                                                                                +
- -- Constraints                                                                                                                 +
- ALTER TABLE gdmmm.sales ADD CONSTRAINT sales_pkey PRIMARY KEY (sale_id, "Sale date")                                           +
-                                                                                                                                +
- 
-(1 row)
+-- Column comments
+COMMENT ON COLUMN gdmmm.table_all.a IS 'This is a comment for the column.'
+COMMENT ON COLUMN gdmmm.table_all.b IS 'This is a comment for the column.'
 
-                                                                                                         get_ddl                                                                                                          
---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- -- Table definition                                                                                                                                                                                                     +
- CREATE UNLOGGED TABLE gdmmm."Sample unlogged table" (id integer DEFAULT nextval('gdmmm."Sample unlogged table_id_seq"'::regclass) NOT NULL,"name of customer" character varying(255) ,"Age" integer ,"Birth_Date" date )+
-                                                                                                                                                                                                                         +
- -- Column comments                                                                                                                                                                                                      +
- COMMENT ON COLUMN gdmmm."Sample unlogged table"."name of customer" IS 'This is a comment for the column.'                                                                                                               +
-                                                                                                                                                                                                                         +
-                                                                                                                                                                                                                         +
- -- Constraints                                                                                                                                                                                                          +
- ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Sample unlogged table_pkey" PRIMARY KEY (id)                                                                                                                  +
- ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Unique age" UNIQUE ("Age")                                                                                                                                    +
-                                                                                                                                                                                                                         +
- ALTER TABLE gdmmm."Sample unlogged table" ADD CHECK (("Birth_Date" > '1900-01-01'::date))                                                                                                                               +
- 
-(1 row)
 
-SET
-                                                                                                                                                              get_ddl                                                                                                                                                               
-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- -- Table definition                                                                                                                                                                                                                                                                                                               +
- CREATE TABLE gdmmm.table_all (a integer DEFAULT nextval('table_all_a_seq'::regclass) NOT NULL,b integer  NOT NULL,c character varying(20) DEFAULT 'def'::character varying,d integer ) WITH (autovacuum_enabled=false,fillfactor=70,toast_tuple_target=200,autovacuum_vacuum_scale_factor=0.2,autovacuum_analyze_scale_factor=0.1)+
-                                                                                                                                                                                                                                                                                                                                   +
- -- Table comments                                                                                                                                                                                                                                                                                                                 +
- COMMENT ON TABLE gdmmm.table_all IS 'This is a comment for the table.'                                                                                                                                                                                                                                                            +
-                                                                                                                                                                                                                                                                                                                                   +
- -- Column comments                                                                                                                                                                                                                                                                                                                +
- COMMENT ON COLUMN gdmmm.table_all.a IS 'This is a comment for the column.'                                                                                                                                                                                                                                                        +
- COMMENT ON COLUMN gdmmm.table_all.b IS 'This is a comment for the column.'                                                                                                                                                                                                                                                        +
-                                                                                                                                                                                                                                                                                                                                   +
-                                                                                                                                                                                                                                                                                                                                   +
- -- Constraints                                                                                                                                                                                                                                                                                                                    +
- ALTER TABLE gdmmm.table_all ADD CONSTRAINT table_all_pkey PRIMARY KEY (a)                                                                                                                                                                                                                                                         +
- ALTER TABLE gdmmm.table_all ADD CONSTRAINT table_all_d_key UNIQUE (d)                                                                                                                                                                                                                                                             +
-                                                                                                                                                                                                                                                                                                                                   +
- 
-(1 row)
+-- Constraints
+ALTER TABLE gdmmm.table_all ADD CONSTRAINT table_all_pkey PRIMARY KEY (a)
+ALTER TABLE gdmmm.table_all ADD CONSTRAINT table_all_d_key UNIQUE (d)
 
-                                                 get_ddl                                                 
----------------------------------------------------------------------------------------------------------
- -- Table definition                                                                                    +
- CREATE TABLE gdmmm.table_all_child (id integer )                                                       +
-                                                                                                        +
- -- Constraints                                                                                         +
- ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT child_uniq UNIQUE (id)                                +
-                                                                                                        +
-                                                                                                        +
-                                                                                                        +
- -- Referential constraints                                                                             +
- ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT "Fk_customer" FOREIGN KEY (id) REFERENCES table_all(a)+
- 
-(1 row)
 
-                                                             get_ddl                                                             
----------------------------------------------------------------------------------------------------------------------------------
- -- Table definition                                                                                                            +
- CREATE TABLE gdmmm.sales (sale_id integer  NOT NULL,"Sale date" date  NOT NULL,amount numeric ) PARTITION BY RANGE("Sale date")+
-                                                                                                                                +
- -- Constraints                                                                                                                 +
- ALTER TABLE gdmmm.sales ADD CONSTRAINT sales_pkey PRIMARY KEY (sale_id, "Sale date")                                           +
-                                                                                                                                +
- 
-(1 row)
+-- Table definition
+CREATE TABLE gdmmm.table_all_child (id integer )
 
-                                                                                                      get_ddl                                                                                                       
---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- -- Table definition                                                                                                                                                                                               +
- CREATE UNLOGGED TABLE gdmmm."Sample unlogged table" (id integer DEFAULT nextval('"Sample unlogged table_id_seq"'::regclass) NOT NULL,"name of customer" character varying(255) ,"Age" integer ,"Birth_Date" date )+
-                                                                                                                                                                                                                   +
- -- Column comments                                                                                                                                                                                                +
- COMMENT ON COLUMN gdmmm."Sample unlogged table"."name of customer" IS 'This is a comment for the column.'                                                                                                         +
-                                                                                                                                                                                                                   +
-                                                                                                                                                                                                                   +
- -- Constraints                                                                                                                                                                                                    +
- ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Sample unlogged table_pkey" PRIMARY KEY (id)                                                                                                            +
- ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Unique age" UNIQUE ("Age")                                                                                                                              +
-                                                                                                                                                                                                                   +
- ALTER TABLE gdmmm."Sample unlogged table" ADD CHECK (("Birth_Date" > '1900-01-01'::date))                                                                                                                         +
- 
-(1 row)
+-- Constraints
+ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT child_uniq UNIQUE (id)
+
+
+
+-- Referential constraints
+ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT "Fk_customer" FOREIGN KEY (id) REFERENCES gdmmm.table_all(a)
+
+-- Table definition
+CREATE TABLE gdmmm.sales (sale_id integer  NOT NULL,"Sale date" date  NOT NULL,amount numeric ) PARTITION BY RANGE("Sale date")
+
+-- Constraints
+ALTER TABLE gdmmm.sales ADD CONSTRAINT sales_pkey PRIMARY KEY (sale_id, "Sale date")
+
+
+-- Table definition
+CREATE UNLOGGED TABLE gdmmm."Sample unlogged table" (id integer DEFAULT nextval('gdmmm."Sample unlogged table_id_seq"'::regclass) NOT NULL,"name of customer" character varying(255) ,"Age" integer ,"Birth_Date" date )
+
+-- Column comments
+COMMENT ON COLUMN gdmmm."Sample unlogged table"."name of customer" IS 'This is a comment for the column.'
+
+
+-- Constraints
+ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Sample unlogged table_pkey" PRIMARY KEY (id)
+ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Unique age" UNIQUE ("Age")
+
+ALTER TABLE gdmmm."Sample unlogged table" ADD CHECK (("Birth_Date" > '1900-01-01'::date))
+
+-- Table definition
+CREATE TABLE gdmmm.table_all (a integer DEFAULT nextval('table_all_a_seq'::regclass) NOT NULL,b integer  NOT NULL,c character varying(20) DEFAULT 'def'::character varying,d integer ) WITH (autovacuum_enabled=false,fillfactor=70,toast_tuple_target=200,autovacuum_vacuum_scale_factor=0.2,autovacuum_analyze_scale_factor=0.1)
+
+-- Table comments
+COMMENT ON TABLE gdmmm.table_all IS 'This is a comment for the table.'
+
+-- Column comments
+COMMENT ON COLUMN gdmmm.table_all.a IS 'This is a comment for the column.'
+COMMENT ON COLUMN gdmmm.table_all.b IS 'This is a comment for the column.'
+
+
+-- Constraints
+ALTER TABLE gdmmm.table_all ADD CONSTRAINT table_all_pkey PRIMARY KEY (a)
+ALTER TABLE gdmmm.table_all ADD CONSTRAINT table_all_d_key UNIQUE (d)
+
+
+-- Table definition
+CREATE TABLE gdmmm.table_all_child (id integer )
+
+-- Constraints
+ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT child_uniq UNIQUE (id)
+
+
+
+-- Referential constraints
+ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT "Fk_customer" FOREIGN KEY (id) REFERENCES table_all(a)
+
+-- Table definition
+CREATE TABLE gdmmm.sales (sale_id integer  NOT NULL,"Sale date" date  NOT NULL,amount numeric ) PARTITION BY RANGE("Sale date")
+
+-- Constraints
+ALTER TABLE gdmmm.sales ADD CONSTRAINT sales_pkey PRIMARY KEY (sale_id, "Sale date")
+
+
+-- Table definition
+CREATE UNLOGGED TABLE gdmmm."Sample unlogged table" (id integer DEFAULT nextval('"Sample unlogged table_id_seq"'::regclass) NOT NULL,"name of customer" character varying(255) ,"Age" integer ,"Birth_Date" date )
+
+-- Column comments
+COMMENT ON COLUMN gdmmm."Sample unlogged table"."name of customer" IS 'This is a comment for the column.'
+
+
+-- Constraints
+ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Sample unlogged table_pkey" PRIMARY KEY (id)
+ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Unique age" UNIQUE ("Age")
+
+ALTER TABLE gdmmm."Sample unlogged table" ADD CHECK (("Birth_Date" > '1900-01-01'::date))
 

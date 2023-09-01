@@ -1,79 +1,34 @@
-                     get_dependent_ddl                      
-------------------------------------------------------------
- CREATE INDEX perf_index ON gdmmm.table_all USING btree (c)+
- 
-(1 row)
+CREATE INDEX perf_index ON gdmmm.table_all USING btree (c)
 
-                                        get_dependent_ddl                                         
---------------------------------------------------------------------------------------------------
- CREATE INDEX "Gin_Index_Name" ON gdmmm."Sample unlogged table" USING spgist ("name of customer")+
- 
-(1 row)
+CREATE INDEX "Gin_Index_Name" ON gdmmm."Sample unlogged table" USING spgist ("name of customer")
 
-                             get_dependent_ddl                             
----------------------------------------------------------------------------
- ALTER TABLE gdmmm.table_all ADD CONSTRAINT table_all_pkey PRIMARY KEY (a)+
- ALTER TABLE gdmmm.table_all ADD CONSTRAINT table_all_d_key UNIQUE (d)    +
-                                                                          +
- 
-(1 row)
+ALTER TABLE gdmmm.table_all ADD CONSTRAINT table_all_pkey PRIMARY KEY (a)
+ALTER TABLE gdmmm.table_all ADD CONSTRAINT table_all_d_key UNIQUE (d)
 
-                            get_dependent_ddl                            
--------------------------------------------------------------------------
- ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT child_uniq UNIQUE (id)+
-                                                                        +
- 
-(1 row)
 
-                                           get_dependent_ddl                                            
---------------------------------------------------------------------------------------------------------
- ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Sample unlogged table_pkey" PRIMARY KEY (id)+
- ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Unique age" UNIQUE ("Age")                  +
-                                                                                                       +
- ALTER TABLE gdmmm."Sample unlogged table" ADD CHECK (("Birth_Date" > '1900-01-01'::date))             +
- 
-(1 row)
+ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT child_uniq UNIQUE (id)
 
-                                               get_dependent_ddl                                               
----------------------------------------------------------------------------------------------------------------
- ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT "Fk_customer" FOREIGN KEY (id) REFERENCES gdmmm.table_all(a)+
- 
-(1 row)
 
-SET
-                  get_dependent_ddl                   
-------------------------------------------------------
- CREATE INDEX perf_index ON table_all USING btree (c)+
- 
-(1 row)
+ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Sample unlogged table_pkey" PRIMARY KEY (id)
+ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Unique age" UNIQUE ("Age")
 
-                                     get_dependent_ddl                                      
---------------------------------------------------------------------------------------------
- CREATE INDEX "Gin_Index_Name" ON "Sample unlogged table" USING spgist ("name of customer")+
- 
-(1 row)
+ALTER TABLE gdmmm."Sample unlogged table" ADD CHECK (("Birth_Date" > '1900-01-01'::date))
 
-                             get_dependent_ddl                             
----------------------------------------------------------------------------
- ALTER TABLE gdmmm.table_all ADD CONSTRAINT table_all_pkey PRIMARY KEY (a)+
- ALTER TABLE gdmmm.table_all ADD CONSTRAINT table_all_d_key UNIQUE (d)    +
-                                                                          +
- 
-(1 row)
+ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT "Fk_customer" FOREIGN KEY (id) REFERENCES gdmmm.table_all(a)
 
-                            get_dependent_ddl                            
--------------------------------------------------------------------------
- ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT child_uniq UNIQUE (id)+
-                                                                        +
- 
-(1 row)
+CREATE INDEX perf_index ON table_all USING btree (c)
 
-                                           get_dependent_ddl                                            
---------------------------------------------------------------------------------------------------------
- ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Sample unlogged table_pkey" PRIMARY KEY (id)+
- ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Unique age" UNIQUE ("Age")                  +
-                                                                                                       +
- ALTER TABLE gdmmm."Sample unlogged table" ADD CHECK (("Birth_Date" > '1900-01-01'::date))             +
- 
-(1 row)
+CREATE INDEX "Gin_Index_Name" ON "Sample unlogged table" USING spgist ("name of customer")
+
+ALTER TABLE gdmmm.table_all ADD CONSTRAINT table_all_pkey PRIMARY KEY (a)
+ALTER TABLE gdmmm.table_all ADD CONSTRAINT table_all_d_key UNIQUE (d)
+
+
+ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT child_uniq UNIQUE (id)
+
+
+ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Sample unlogged table_pkey" PRIMARY KEY (id)
+ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Unique age" UNIQUE ("Age")
+
+ALTER TABLE gdmmm."Sample unlogged table" ADD CHECK (("Birth_Date" > '1900-01-01'::date))
 

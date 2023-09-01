@@ -1,7 +1,3 @@
-       get_granted_ddl       
------------------------------
- GRANT role_test2 TO "user" +
- GRANT "Role_test" TO "user"+
- 
-(1 row)
+GRANT role_test2 TO "user"
+GRANT "Role_test" TO "user"
 
