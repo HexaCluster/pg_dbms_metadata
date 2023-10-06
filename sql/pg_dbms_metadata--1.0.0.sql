@@ -1151,6 +1151,7 @@ BEGIN
         JOIN pg_auth_members m ON r.oid = m.roleid
         JOIN pg_roles u ON m.member = u.oid
         WHERE u.rolname = p_grantee
+        ORDER BY r.rolname
     LOOP
         l_grant_statements := concat(l_grant_statements, 'GRANT ', quote_ident(l_role_info.role_name), ' TO ', quote_ident(p_grantee), CASE l_sqlterminator_guc WHEN TRUE THEN ';' ELSE '' END, E'\n');
     END LOOP;
