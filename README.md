@@ -116,7 +116,7 @@ Parameters:
 
 Example:
 ```
-SELECT dbms_metadata.get_ddl('TABLE','table_all','gdmmm');
+SELECT dbms_metadata.get_ddl('TABLE','employees','gdmmm');
 ```
 
 ### [GET_DEPENDENT_DDL](#get_dependent_ddl)
@@ -146,7 +146,7 @@ Parameters:
 
 Example:
 ```
-SELECT dbms_metadata.get_dependent_ddl('CONSTRAINT','table_all','gdmmm');
+SELECT dbms_metadata.get_dependent_ddl('CONSTRAINT','employees','gdmmm');
 ```
 
 ### [GET_GRANTED_DDL](#get_granted_ddl)
