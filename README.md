@@ -1,6 +1,6 @@
 # pg_dbms_metadata
 
-PostgreSQL extension to extract DDL of database objects in a way compatible to Oracle DBMS_METADATA package.
+PostgreSQL extension to extract DDL of database objects in a way compatible to Oracle DBMS_METADATA package. This extension serves a dual purpose—not only does it provide compatibility with the Oracle DBMS_METADATA package, but it also establishes a systematic approach to programmatically retrieve DDL for objects. You now have the flexibility to generate DDL for an object either from a plain SQL query or from PL/pgSQL code. This also enables the extraction of DDL using any client that can execute plain SQL queries. These features distinguishes it from standard methods like pg_dump. 
 
 Information about the Oracle DBMS_metadata package can be found [here](https://docs.oracle.com/en/database/oracle/oracle-database/19/arpls/DBMS_METADATA.html)
 
@@ -17,7 +17,7 @@ Information about the Oracle DBMS_metadata package can be found [here](https://d
 
 ## [Description](#description)
 
-This PostgreSQL extension provide compatibility with the DBMS_METADATA Oracle package's API to extract DDL. This extension only supports DDL extraction through GET_xxx functions. Support to FETCH_xxx functions and XML support is not added. As of now, any user can get the ddl of any object in the database. Like Oracle, we have flexibility of omitting schema while trying to get ddl of an object. This will use search_path to find the object and gets required ddl. However when schema is omitted, the current user should atleast have USAGE access on schema in which target object is present. 
+This PostgreSQL extension provide compatibility with the DBMS_METADATA Oracle package's API to extract DDL. This extension only supports DDL extraction through GET_xxx functions. Support to FETCH_xxx functions and XML support is not added. As of now, any user can get the ddl of any object in the database. Like Oracle, we have flexibility of omitting schema while trying to get ddl of an object. This will use search_path to find the object and gets required ddl. However when schema is omitted, the current user should atleast have USAGE access on schema in which target object is present. See [ROADMAP](ROADMAP.md) for a precise understanding of what has been implemented and what is part of the future plans.
 
 The following functions and stored procedures are implemented:
 
