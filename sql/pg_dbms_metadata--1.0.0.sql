@@ -192,12 +192,16 @@ DECLARE
     l_storage_guc boolean;
 BEGIN
     -- Getting values of transform params
-    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
-    SELECT current_setting('DBMS_METADATA.CONSTRAINTS')::boolean INTO l_constraints_guc;
-    SELECT current_setting('DBMS_METADATA.REF_CONSTRAINTS')::boolean INTO l_ref_constraints_guc;
-    SELECT current_setting('DBMS_METADATA.PARTITIONING')::boolean INTO l_partitioning_guc;
-    SELECT current_setting('DBMS_METADATA.SEGMENT_ATTRIBUTES')::boolean INTO l_segment_attributes_guc;
-    SELECT current_setting('DBMS_METADATA.STORAGE')::boolean INTO l_storage_guc;
+    BEGIN
+        SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
+        SELECT current_setting('DBMS_METADATA.CONSTRAINTS')::boolean INTO l_constraints_guc;
+        SELECT current_setting('DBMS_METADATA.REF_CONSTRAINTS')::boolean INTO l_ref_constraints_guc;
+        SELECT current_setting('DBMS_METADATA.PARTITIONING')::boolean INTO l_partitioning_guc;
+        SELECT current_setting('DBMS_METADATA.SEGMENT_ATTRIBUTES')::boolean INTO l_segment_attributes_guc;
+        SELECT current_setting('DBMS_METADATA.STORAGE')::boolean INTO l_storage_guc;
+    EXCEPTION
+        WHEN OTHERS THEN NULL;
+    END;
 
     /*  Getting the OID of the table. We will make remaining code in this function independent of parameters passed. 
         For ex: when schema passed is null
@@ -373,7 +377,11 @@ DECLARE
     l_sqlterminator_guc boolean;
 BEGIN
     -- Getting values of transform params
-    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
+    BEGIN
+        SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
+    EXCEPTION
+        WHEN OTHERS THEN NULL;
+    END;
 
     SELECT dbms_metadata.get_object_oid('VIEW', view_schema, view_name) INTO l_oid;
 
@@ -420,7 +428,11 @@ DECLARE
     l_sqlterminator_guc boolean;
 BEGIN
     -- Getting values of transform params
-    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
+    BEGIN
+        SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
+    EXCEPTION
+        WHEN OTHERS THEN NULL;
+    END;
 
     SELECT dbms_metadata.get_object_oid('SEQUENCE', p_schema, p_sequence) INTO STRICT l_oid;
 
@@ -466,7 +478,11 @@ DECLARE
     l_sqlterminator_guc boolean;
 BEGIN
     -- Getting values of transform params
-    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
+    BEGIN
+        SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
+    EXCEPTION
+        WHEN OTHERS THEN NULL;
+    END;
 
     CASE WHEN routine_type = 'PROCEDURE' THEN
         routine_type_flag = 'p';
@@ -515,7 +531,11 @@ DECLARE
     l_sqlterminator_guc boolean;
 BEGIN
     -- Getting values of transform params
-    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
+    BEGIN
+        SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
+    EXCEPTION
+        WHEN OTHERS THEN NULL;
+    END;
 
     SELECT dbms_metadata.get_object_oid('INDEX', schema_name, index_name) INTO STRICT l_oid;
 
@@ -558,7 +578,11 @@ DECLARE
     l_sqlterminator_guc boolean;
 BEGIN
     -- Getting values of transform params
-    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
+    BEGIN
+        SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
+    EXCEPTION
+        WHEN OTHERS THEN NULL;
+    END;
 
     SELECT dbms_metadata.get_object_oid('CONSTRAINT', schema_name, constraint_name) INTO l_oid;
 
@@ -606,7 +630,11 @@ BEGIN
     END IF;
 
     -- Getting values of transform params
-    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
+    BEGIN
+        SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
+    EXCEPTION
+        WHEN OTHERS THEN NULL;
+    END;
 
     SELECT format('ALTER TABLE %I.%I ADD CONSTRAINT %I %s', schema_name, cl.relname, conname, pg_catalog.pg_get_constraintdef(con.oid, TRUE))
     INTO STRICT alter_statement
@@ -651,7 +679,11 @@ BEGIN
     END IF;
 
     -- Getting values of transform params
-    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
+    BEGIN
+        SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
+    EXCEPTION
+        WHEN OTHERS THEN NULL;
+    END;
 
     SELECT format('ALTER TABLE %I.%I ADD CONSTRAINT %I %s', schema_name, cl.relname, conname, pg_catalog.pg_get_constraintdef(con.oid, TRUE))
     INTO STRICT alter_statement
@@ -695,7 +727,11 @@ BEGIN
     END IF;
 
     -- Getting values of transform params
-    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
+    BEGIN
+        SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
+    EXCEPTION
+        WHEN OTHERS THEN NULL;
+    END;
 
     SELECT pg_get_triggerdef(t.oid)
     INTO STRICT trigger_def
@@ -736,7 +772,11 @@ DECLARE
     l_sqlterminator_guc boolean;
 BEGIN
     -- Getting values of transform params
-    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
+    BEGIN
+        SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
+    EXCEPTION
+        WHEN OTHERS THEN NULL;
+    END;
     
     SELECT dbms_metadata.get_object_oid('TYPE', p_schema_name, p_type_name) INTO l_oid;
 
@@ -802,7 +842,11 @@ DECLARE
     l_sqlterminator_guc boolean;
 BEGIN
     -- Getting values of transform params
-    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
+    BEGIN
+        SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
+    EXCEPTION
+        WHEN OTHERS THEN NULL;
+    END;
 
     SELECT dbms_metadata.get_object_oid('TABLE', p_schema, p_table) INTO l_oid;
 
@@ -876,7 +920,11 @@ DECLARE
     l_sqlterminator_guc boolean;
 BEGIN
     -- Getting values of transform params
-    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
+    BEGIN
+        SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
+    EXCEPTION
+        WHEN OTHERS THEN NULL;
+    END;
 
     -- Getting the OID of the table
     SELECT dbms_metadata.get_object_oid('TABLE', p_schema, p_table) INTO l_oid;
@@ -976,7 +1024,11 @@ DECLARE
     l_sqlterminator_guc boolean;
 BEGIN
     -- Getting values of transform params
-    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
+    BEGIN
+        SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
+    EXCEPTION
+        WHEN OTHERS THEN NULL;
+    END;
 
     -- Getting the OID of the table
     SELECT dbms_metadata.get_object_oid('TABLE', p_schema, p_table) INTO l_oid;
@@ -1030,7 +1082,11 @@ DECLARE
     l_sqlterminator_guc boolean;
 BEGIN
     -- Getting values of transform params
-    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
+    BEGIN
+        SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
+    EXCEPTION
+        WHEN OTHERS THEN NULL;
+    END;
 
     -- Getting the OID of the table
     SELECT dbms_metadata.get_object_oid('TABLE', p_schema, p_table) INTO l_oid;
@@ -1099,7 +1155,11 @@ DECLARE
     l_sqlterminator_guc boolean;
 BEGIN
     -- Getting values of transform params
-    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
+    BEGIN
+        SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
+    EXCEPTION
+        WHEN OTHERS THEN NULL;
+    END;
 
     -- Getting the OID of the table
     SELECT dbms_metadata.get_object_oid('TABLE', schema_name, table_name) INTO l_oid;
@@ -1143,7 +1203,11 @@ DECLARE
     l_sqlterminator_guc boolean;
 BEGIN
     -- Getting values of transform params
-    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
+    BEGIN
+        SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
+    EXCEPTION
+        WHEN OTHERS THEN NULL;
+    END;
     
     FOR l_role_info IN 
         SELECT r.rolname AS role_name
