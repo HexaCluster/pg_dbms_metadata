@@ -17,7 +17,9 @@ Information about the Oracle DBMS_metadata package can be found [here](https://d
 
 ## [Description](#description)
 
-This PostgreSQL extension provide compatibility with the DBMS_METADATA Oracle package's API to extract DDL. This extension only supports DDL extraction through GET_xxx functions. Support to FETCH_xxx functions and XML support is not added. As of now, any user can get the ddl of any object in the database. Like Oracle, we have flexibility of omitting schema while trying to get ddl of an object. This will use search_path to find the object and gets required ddl. However when schema is omitted, the current user should atleast have USAGE access on schema in which target object is present. See [ROADMAP](ROADMAP.md) for a precise understanding of what has been implemented and what is part of the future plans.
+This PostgreSQL extension provide compatibility with the DBMS_METADATA Oracle package's API to extract DDL. This extension only supports DDL extraction through GET_xxx functions. Support to FETCH_xxx functions and XML support is not added. As of now, any user can get the ddl of any object in the database. Like Oracle, we have flexibility of omitting schema name while trying to get ddl of an object. This will use search_path to find the object and gets required ddl. However when schema name is omitted, the current user should atleast have USAGE access on schema in which target object is present. 
+
+Also see [ROADMAP](ROADMAP.md) for a precise understanding of what has been implemented and what is part of the future plans.
 
 The following functions and stored procedures are implemented:
 
@@ -52,7 +54,7 @@ Test of the extension can be done using:
     make installcheck
 ```
 
-If you just want to try out the extension or if you don't have the privileges to create an extension, you can just import the extension file into the database:
+If you just want to try out the extension or if you don't have the privileges to create an extension, you can just import the extension file into the database. But when performing this, the creation of a couple of functions may fail, those with a C function in the backend. You can ignore those errors:
 ```
 psql -d mydb -c "CREATE SCHEMA dbms_metadata;"
 
@@ -60,7 +62,7 @@ psql -d mydb -f sql/pg_dbms_metadata--1.0.0.sql
 ```
 This is especially useful for database in DBaas cloud services. To upgrade just import the extension upgrade files using psql. 
 
- The C part of the extension was designed to automatically manage default values for the transform params in each session. If you plan to use the extension for a long-term purpose and desire the exact behavior of Oracle, it is recommended to perform a complete installation.
+ The C part of the extension was designed to automatically manage default values for the transform params in each session. If you plan to use the extension for a long-term purpose and desire consistent and exact behavior of Oracle, it is recommended to perform a complete installation.
 
 ## [Manage the extension](#manage-the-extension)
 
@@ -73,13 +75,6 @@ To upgrade to a new version execute:
 ```
     psql -d mydb -c 'ALTER EXTENSION pg_dbms_metadata UPDATE TO "1.1.0"'
 ```
-
-If you doesn't have the privileges to create an extension, you can just import the extension
-file into the database, for example:
-
-    psql -d mydb -f sql/pg_dbms_metadata--1.0.0.sql
-
-This is especially useful for database in DBaas cloud services. To upgrade just import the extension upgrade files using psql.
 
 ## [Functions](#functions)
 
@@ -175,7 +170,7 @@ SELECT dbms_metadata.get_granted_ddl('ROLE_GRANT','user_test');
 
 ### [SET_TRANSFORM_PARAM](#set_transform_param)
 
-This procedure is used to configure session-level transform params, with which we can customize the DDL of objects. This only supports session-level transform params, not setting transform params through any other transform handles. GET_DDL, GET_DEPENDENT_DDL inherit these params when they invoke the DDL transform. There is a small change in the procedure signature when compared to the one of Oracle.
+This procedure is used to configure session-level transform params, with which we can customize the DDL of objects. This only supports session-level transform params, not setting transform params through any other transform handles like Oracle. GET_DDL, GET_DEPENDENT_DDL inherit these params when they invoke the DDL transform. There is a small change in the procedure signature when compared to the one of Oracle.
 
 Syntax:
 ```

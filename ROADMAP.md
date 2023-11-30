@@ -63,3 +63,5 @@ MISCELLANEOUS FUTURE PLANS
 ---------------------------
 - ENABLE clause in trigger DDL
 - DEFERRED constraints 
+- [SET_REMAP_PARAM of Oracle](https://docs.oracle.com/database/121/ARPLS/d_metada.htm#ARPLS66910)
+- Extracting DDL of heterogeneous object types like SCHEMA_EXPORT 
