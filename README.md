@@ -41,14 +41,6 @@ To be able to run this extension, your PostgreSQL version must support extension
     sudo make install
 ```
 
-4. Add `pg_dbms_metadata` to `session_preload_libraries` in `postgresql.conf`.
-```
-# add to postgresql.conf
-
-# required to load default values to pg_dbms_metadata session-level transform params when a session starts
-session_preload_libraries = 'pg_dbms_metadata'
-```
-
 Test of the extension can be done using:
 ```
     make installcheck
@@ -209,7 +201,7 @@ CALL dbms_metadata.set_transform_param('SQLTERMINATOR',true);
 
 - Akhil Reddy Banappagari
 - Avinash Vallarapu
-- Gilles Darold (Reviewer)
+- Gilles Darold
 
 ## [License](#license)
 
