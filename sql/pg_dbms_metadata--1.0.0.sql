@@ -141,12 +141,7 @@ BEGIN
         RETURN;
     ELSIF name = 'DEFAULT' THEN
         IF value THEN
-            BEGIN
-                PERFORM dbms_metadata.set_default_transform_params();
-            EXCEPTION 
-                WHEN undefined_function THEN
-                    RAISE EXCEPTION 'This action requires complete installation of the extension.';
-            END;
+            PERFORM dbms_metadata.set_default_transform_params();
         END IF;
     ELSE
         PERFORM set_config('DBMS_METADATA.' || name, value::text, false);
