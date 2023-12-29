@@ -1,4 +1,0 @@
-CREATE TYPE gdmmm."Address" AS ( "City" character varying, loc gdmmm.location, pin bigint)
-CREATE TYPE gdmmm.location AS ( lat double precision, lon double precision)
-CREATE TYPE gdmmm."Address" AS ( "City" character varying, loc location, pin bigint)
-CREATE TYPE gdmmm.location AS ( lat double precision, lon double precision)

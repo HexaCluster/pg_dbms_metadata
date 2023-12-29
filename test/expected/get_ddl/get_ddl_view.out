@@ -1,8 +1,0 @@
-CREATE VIEW gdmmm.gg_d AS  SELECT table_all.a
-   FROM gdmmm.table_all
-CREATE VIEW gdmmm."Global fines" AS  SELECT "Sample unlogged table"."name of customer"
-   FROM gdmmm."Sample unlogged table"
-CREATE VIEW gdmmm.gg_d AS  SELECT table_all.a
-   FROM table_all
-CREATE VIEW gdmmm."Global fines" AS  SELECT "Sample unlogged table"."name of customer"
-   FROM "Sample unlogged table"

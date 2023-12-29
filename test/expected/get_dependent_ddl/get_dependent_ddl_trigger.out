@@ -1,5 +1,0 @@
-CREATE TRIGGER "order" BEFORE INSERT ON gdmmm.table_all FOR EACH ROW EXECUTE FUNCTION gdmmm.double_salary()
-
-CREATE TRIGGER trigger_edit_text BEFORE INSERT ON gdmmm.table_all FOR EACH ROW EXECUTE FUNCTION gdmmm.edit_text()
-
-

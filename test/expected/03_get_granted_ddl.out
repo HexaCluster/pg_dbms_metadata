@@ -1,0 +1,10 @@
+-- test for retrieving granted roles ddl
+\i test/sql/get_granted_ddl/get_granted_ddl_role.sql
+SELECT dbms_metadata.get_granted_ddl('ROLE_GRANT','user');
+       get_granted_ddl       
+-----------------------------
+ GRANT "Role_test" TO "user"+
+ GRANT role_test2 TO "user" +
+ 
+(1 row)
+

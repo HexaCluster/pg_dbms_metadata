@@ -1,3 +1,9 @@
+/*
+ * Must be executed before all regression test.
+ */
+CREATE EXTENSION pg_dbms_metadata;
+
+-- Create all objects used in the regression tests
 CREATE SCHEMA gdmmm;
 
 ----
@@ -174,10 +180,13 @@ $BODY$;
 ----
 -- Users and Roles
 ----
+DROP ROLE IF EXISTS "Role_test";
 CREATE ROLE "Role_test";
 
+DROP ROLE IF EXISTS role_test2;
 CREATE ROLE role_test2;
 
+DROP ROLE IF EXISTS "user";
 CREATE USER "user";
 
 GRANT "Role_test", role_test2 TO "user";
