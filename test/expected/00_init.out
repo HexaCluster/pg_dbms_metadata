@@ -153,10 +153,7 @@ $BODY$;
 ----
 -- Users and Roles
 ----
-DROP ROLE IF EXISTS "Role_test";
-CREATE ROLE "Role_test";
-DROP ROLE IF EXISTS role_test2;
-CREATE ROLE role_test2;
-DROP ROLE IF EXISTS "user";
-CREATE USER "user";
-GRANT "Role_test", role_test2 TO "user";
+CREATE ROLE "Dbms_Metadata_test_user2873487";
+CREATE ROLE dbms_metadata_test_user8987987;
+CREATE USER "dbms_metadata_test_User565667";
+GRANT "Dbms_Metadata_test_user2873487", dbms_metadata_test_user8987987 TO "dbms_metadata_test_User565667";

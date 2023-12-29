@@ -16,7 +16,8 @@ $(error Minimum version of PostgreSQL required is 9.1.0)
 endif
 
 TESTS        = 00_init  01_get_ddl 02_get_dependent_ddl \
-	       03_get_granted_ddl 04_set_transform_param
+	       03_get_granted_ddl 04_set_transform_param \
+		   05_clean_up
 
 REGRESS      = $(patsubst test/sql/%.sql,%,$(TESTS))
 REGRESS_OPTS = --inputdir=test
