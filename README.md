@@ -46,15 +46,13 @@ Test of the extension can be done using:
     make installcheck
 ```
 
-If you just want to try out the extension or if you don't have the privileges to create an extension, you can just import the extension file into the database. But when performing this, the creation of a couple of functions may fail, those with a C function in the backend. You can ignore those errors:
+If you just want to try out the extension or if you don't have the privileges to create an extension, you can just import the extension file into the database:
 ```
 psql -d mydb -c "CREATE SCHEMA dbms_metadata;"
 
 psql -d mydb -f sql/pg_dbms_metadata--1.0.0.sql
 ```
-This is especially useful for database in DBaas cloud services. To upgrade just import the extension upgrade files using psql. 
-
- The C part of the extension was designed to automatically manage default values for the transform params in each session. If you plan to use the extension for a long-term purpose and desire consistent and exact behavior of Oracle, it is recommended to perform a complete installation.
+This is especially useful for database in DBaas cloud services. To upgrade just import the extension upgrade files using psql.
 
 ## [Manage the extension](#manage-the-extension)
 
