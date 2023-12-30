@@ -9,7 +9,6 @@ PG91 = $(shell $(PG_CONFIG) --version | egrep " 8\.| 9\.0" > /dev/null && echo n
 
 ifeq ($(PG91),yes)
 DOCS = $(wildcard README*)
-MODULES = pg_dbms_metadata
 
 DATA = $(wildcard updates/*--*.sql) sql/$(EXTENSION)--$(EXTVERSION).sql
 else
