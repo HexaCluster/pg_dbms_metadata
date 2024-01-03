@@ -1,0 +1,346 @@
+-- Test tables DDL export
+\i test/sql/get_ddl/get_ddl_table.sql
+SELECT dbms_metadata.get_ddl('TABLE','table_all','gdmmm');
+                                                                                                                                                                 get_ddl                                                                                                                                                                  
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ -- Table definition                                                                                                                                                                                                                                                                                                                     +
+ CREATE TABLE gdmmm.table_all (a integer DEFAULT nextval('gdmmm.table_all_a_seq'::regclass) NOT NULL,b integer  NOT NULL,c character varying(20) DEFAULT 'def'::character varying,d integer ) WITH (autovacuum_enabled=false,fillfactor=70,toast_tuple_target=200,autovacuum_vacuum_scale_factor=0.2,autovacuum_analyze_scale_factor=0.1)+
+                                                                                                                                                                                                                                                                                                                                         +
+ -- Table comments                                                                                                                                                                                                                                                                                                                       +
+ COMMENT ON TABLE gdmmm.table_all IS 'This is a comment for the table.'                                                                                                                                                                                                                                                                  +
+                                                                                                                                                                                                                                                                                                                                         +
+ -- Column comments                                                                                                                                                                                                                                                                                                                      +
+ COMMENT ON COLUMN gdmmm.table_all.a IS 'This is a comment for the column.'                                                                                                                                                                                                                                                              +
+ COMMENT ON COLUMN gdmmm.table_all.b IS 'This is a comment for the column.'                                                                                                                                                                                                                                                              +
+                                                                                                                                                                                                                                                                                                                                         +
+                                                                                                                                                                                                                                                                                                                                         +
+ -- Constraints                                                                                                                                                                                                                                                                                                                          +
+ ALTER TABLE gdmmm.table_all ADD CONSTRAINT table_all_pkey PRIMARY KEY (a)                                                                                                                                                                                                                                                               +
+ ALTER TABLE gdmmm.table_all ADD CONSTRAINT table_all_d_key UNIQUE (d)                                                                                                                                                                                                                                                                   +
+                                                                                                                                                                                                                                                                                                                                         +
+ 
+(1 row)
+
+SELECT dbms_metadata.get_ddl('TABLE','table_all_child','gdmmm');
+                                                    get_ddl                                                    
+---------------------------------------------------------------------------------------------------------------
+ -- Table definition                                                                                          +
+ CREATE TABLE gdmmm.table_all_child (id integer )                                                             +
+                                                                                                              +
+ -- Constraints                                                                                               +
+ ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT child_uniq UNIQUE (id)                                      +
+                                                                                                              +
+                                                                                                              +
+                                                                                                              +
+ -- Referential constraints                                                                                   +
+ ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT "Fk_customer" FOREIGN KEY (id) REFERENCES gdmmm.table_all(a)+
+ 
+(1 row)
+
+SELECT dbms_metadata.get_ddl('TABLE','sales','gdmmm');
+                                                             get_ddl                                                             
+---------------------------------------------------------------------------------------------------------------------------------
+ -- Table definition                                                                                                            +
+ CREATE TABLE gdmmm.sales (sale_id integer  NOT NULL,"Sale date" date  NOT NULL,amount numeric ) PARTITION BY RANGE("Sale date")+
+                                                                                                                                +
+ -- Constraints                                                                                                                 +
+ ALTER TABLE gdmmm.sales ADD CONSTRAINT sales_pkey PRIMARY KEY (sale_id, "Sale date")                                           +
+                                                                                                                                +
+ 
+(1 row)
+
+SELECT dbms_metadata.get_ddl('TABLE','Sample unlogged table','gdmmm');
+                                                                                                         get_ddl                                                                                                          
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ -- Table definition                                                                                                                                                                                                     +
+ CREATE UNLOGGED TABLE gdmmm."Sample unlogged table" (id integer DEFAULT nextval('gdmmm."Sample unlogged table_id_seq"'::regclass) NOT NULL,"name of customer" character varying(255) ,"Age" integer ,"Birth_Date" date )+
+                                                                                                                                                                                                                         +
+ -- Column comments                                                                                                                                                                                                      +
+ COMMENT ON COLUMN gdmmm."Sample unlogged table"."name of customer" IS 'This is a comment for the column.'                                                                                                               +
+                                                                                                                                                                                                                         +
+                                                                                                                                                                                                                         +
+ -- Constraints                                                                                                                                                                                                          +
+ ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Sample unlogged table_pkey" PRIMARY KEY (id)                                                                                                                  +
+ ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Unique age" UNIQUE ("Age")                                                                                                                                    +
+                                                                                                                                                                                                                         +
+ ALTER TABLE gdmmm."Sample unlogged table" ADD CHECK (("Birth_Date" > '01-01-1900'::date))                                                                                                                               +
+ 
+(1 row)
+
+-- tests for schema as NULL
+SET search_path TO public, gdmmm;
+SELECT dbms_metadata.get_ddl('TABLE','table_all');
+                                                                                                                                                              get_ddl                                                                                                                                                               
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ -- Table definition                                                                                                                                                                                                                                                                                                               +
+ CREATE TABLE gdmmm.table_all (a integer DEFAULT nextval('table_all_a_seq'::regclass) NOT NULL,b integer  NOT NULL,c character varying(20) DEFAULT 'def'::character varying,d integer ) WITH (autovacuum_enabled=false,fillfactor=70,toast_tuple_target=200,autovacuum_vacuum_scale_factor=0.2,autovacuum_analyze_scale_factor=0.1)+
+                                                                                                                                                                                                                                                                                                                                   +
+ -- Table comments                                                                                                                                                                                                                                                                                                                 +
+ COMMENT ON TABLE gdmmm.table_all IS 'This is a comment for the table.'                                                                                                                                                                                                                                                            +
+                                                                                                                                                                                                                                                                                                                                   +
+ -- Column comments                                                                                                                                                                                                                                                                                                                +
+ COMMENT ON COLUMN gdmmm.table_all.a IS 'This is a comment for the column.'                                                                                                                                                                                                                                                        +
+ COMMENT ON COLUMN gdmmm.table_all.b IS 'This is a comment for the column.'                                                                                                                                                                                                                                                        +
+                                                                                                                                                                                                                                                                                                                                   +
+                                                                                                                                                                                                                                                                                                                                   +
+ -- Constraints                                                                                                                                                                                                                                                                                                                    +
+ ALTER TABLE gdmmm.table_all ADD CONSTRAINT table_all_pkey PRIMARY KEY (a)                                                                                                                                                                                                                                                         +
+ ALTER TABLE gdmmm.table_all ADD CONSTRAINT table_all_d_key UNIQUE (d)                                                                                                                                                                                                                                                             +
+                                                                                                                                                                                                                                                                                                                                   +
+ 
+(1 row)
+
+SELECT dbms_metadata.get_ddl('TABLE','table_all_child');
+                                                 get_ddl                                                 
+---------------------------------------------------------------------------------------------------------
+ -- Table definition                                                                                    +
+ CREATE TABLE gdmmm.table_all_child (id integer )                                                       +
+                                                                                                        +
+ -- Constraints                                                                                         +
+ ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT child_uniq UNIQUE (id)                                +
+                                                                                                        +
+                                                                                                        +
+                                                                                                        +
+ -- Referential constraints                                                                             +
+ ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT "Fk_customer" FOREIGN KEY (id) REFERENCES table_all(a)+
+ 
+(1 row)
+
+SELECT dbms_metadata.get_ddl('TABLE','sales');
+                                                             get_ddl                                                             
+---------------------------------------------------------------------------------------------------------------------------------
+ -- Table definition                                                                                                            +
+ CREATE TABLE gdmmm.sales (sale_id integer  NOT NULL,"Sale date" date  NOT NULL,amount numeric ) PARTITION BY RANGE("Sale date")+
+                                                                                                                                +
+ -- Constraints                                                                                                                 +
+ ALTER TABLE gdmmm.sales ADD CONSTRAINT sales_pkey PRIMARY KEY (sale_id, "Sale date")                                           +
+                                                                                                                                +
+ 
+(1 row)
+
+SELECT dbms_metadata.get_ddl('TABLE','Sample unlogged table');
+                                                                                                      get_ddl                                                                                                       
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ -- Table definition                                                                                                                                                                                               +
+ CREATE UNLOGGED TABLE gdmmm."Sample unlogged table" (id integer DEFAULT nextval('"Sample unlogged table_id_seq"'::regclass) NOT NULL,"name of customer" character varying(255) ,"Age" integer ,"Birth_Date" date )+
+                                                                                                                                                                                                                   +
+ -- Column comments                                                                                                                                                                                                +
+ COMMENT ON COLUMN gdmmm."Sample unlogged table"."name of customer" IS 'This is a comment for the column.'                                                                                                         +
+                                                                                                                                                                                                                   +
+                                                                                                                                                                                                                   +
+ -- Constraints                                                                                                                                                                                                    +
+ ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Sample unlogged table_pkey" PRIMARY KEY (id)                                                                                                            +
+ ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Unique age" UNIQUE ("Age")                                                                                                                              +
+                                                                                                                                                                                                                   +
+ ALTER TABLE gdmmm."Sample unlogged table" ADD CHECK (("Birth_Date" > '01-01-1900'::date))                                                                                                                         +
+ 
+(1 row)
+
+-- Test views DDL export
+\i test/sql/get_ddl/get_ddl_view.sql
+SELECT dbms_metadata.get_ddl('VIEW','gg_d','gdmmm');
+               get_ddl               
+-------------------------------------
+ CREATE VIEW gdmmm.gg_d AS  SELECT a+
+    FROM table_all
+(1 row)
+
+SELECT dbms_metadata.get_ddl('VIEW','Global fines','gdmmm');
+                            get_ddl                             
+----------------------------------------------------------------
+ CREATE VIEW gdmmm."Global fines" AS  SELECT "name of customer"+
+    FROM "Sample unlogged table"
+(1 row)
+
+-- tests for schema as NULL
+SET search_path TO public, gdmmm;
+SELECT dbms_metadata.get_ddl('VIEW','gg_d');
+               get_ddl               
+-------------------------------------
+ CREATE VIEW gdmmm.gg_d AS  SELECT a+
+    FROM table_all
+(1 row)
+
+SELECT dbms_metadata.get_ddl('VIEW','Global fines');
+                            get_ddl                             
+----------------------------------------------------------------
+ CREATE VIEW gdmmm."Global fines" AS  SELECT "name of customer"+
+    FROM "Sample unlogged table"
+(1 row)
+
+-- Test sequences DDL export
+\i test/sql/get_ddl/get_ddl_sequence.sql
+SELECT dbms_metadata.get_ddl('SEQUENCE','attach Line','gdmmm');
+                                                         get_ddl                                                          
+--------------------------------------------------------------------------------------------------------------------------
+ CREATE SEQUENCE gdmmm."attach Line" START WITH 1 INCREMENT BY 1 MINVALUE 1 MAXVALUE 9223372036854775807 CACHE 1 NO CYCLE
+(1 row)
+
+-- tests for schema as NULL
+SET search_path TO public, gdmmm;
+SELECT dbms_metadata.get_ddl('SEQUENCE','attach Line');
+                                                         get_ddl                                                          
+--------------------------------------------------------------------------------------------------------------------------
+ CREATE SEQUENCE gdmmm."attach Line" START WITH 1 INCREMENT BY 1 MINVALUE 1 MAXVALUE 9223372036854775807 CACHE 1 NO CYCLE
+(1 row)
+
+-- Test routines DDL export
+\i test/sql/get_ddl/get_ddl_routine.sql
+SELECT dbms_metadata.get_ddl('FUNCTION','Merge objects','gdmmm');
+                                           get_ddl                                           
+---------------------------------------------------------------------------------------------
+ CREATE OR REPLACE FUNCTION gdmmm."Merge objects"("First_val" text, actual_finder "Address")+
+  RETURNS text                                                                              +
+  LANGUAGE plpgsql                                                                          +
+ AS $function$                                                                              +
+ BEGIN                                                                                      +
+     RETURN "First_val" || actual_finder."City";                                            +
+ END                                                                                        +
+ $function$                                                                                 +
+ 
+(1 row)
+
+SELECT dbms_metadata.get_ddl('PROCEDURE','join_entity','gdmmm');
+                                                                 get_ddl                                                                  
+------------------------------------------------------------------------------------------------------------------------------------------
+ CREATE OR REPLACE PROCEDURE gdmmm.join_entity(INOUT var_str text, INOUT num_low bigint, INOUT var_init text, INOUT mid_finder "Address")+
+  LANGUAGE plpgsql                                                                                                                       +
+ AS $procedure$                                                                                                                          +
+ BEGIN                                                                                                                                   +
+     num_low := mid_finder.pin;                                                                                                          +
+     var_init := var_str || ', ' || mid_finder."City";                                                                                   +
+ END                                                                                                                                     +
+ $procedure$                                                                                                                             +
+ 
+(1 row)
+
+-- tests for schema as NULL
+SET search_path TO public, gdmmm;
+SELECT dbms_metadata.get_ddl('FUNCTION','Merge objects');
+                                           get_ddl                                           
+---------------------------------------------------------------------------------------------
+ CREATE OR REPLACE FUNCTION gdmmm."Merge objects"("First_val" text, actual_finder "Address")+
+  RETURNS text                                                                              +
+  LANGUAGE plpgsql                                                                          +
+ AS $function$                                                                              +
+ BEGIN                                                                                      +
+     RETURN "First_val" || actual_finder."City";                                            +
+ END                                                                                        +
+ $function$                                                                                 +
+ 
+(1 row)
+
+SELECT dbms_metadata.get_ddl('PROCEDURE','join_entity');
+                                                                 get_ddl                                                                  
+------------------------------------------------------------------------------------------------------------------------------------------
+ CREATE OR REPLACE PROCEDURE gdmmm.join_entity(INOUT var_str text, INOUT num_low bigint, INOUT var_init text, INOUT mid_finder "Address")+
+  LANGUAGE plpgsql                                                                                                                       +
+ AS $procedure$                                                                                                                          +
+ BEGIN                                                                                                                                   +
+     num_low := mid_finder.pin;                                                                                                          +
+     var_init := var_str || ', ' || mid_finder."City";                                                                                   +
+ END                                                                                                                                     +
+ $procedure$                                                                                                                             +
+ 
+(1 row)
+
+-- Test triggers DDL export
+\i test/sql/get_ddl/get_ddl_trigger.sql
+SELECT dbms_metadata.get_ddl('TRIGGER','order','gdmmm');
+                                                get_ddl                                                
+-------------------------------------------------------------------------------------------------------
+ CREATE TRIGGER "order" BEFORE INSERT ON gdmmm.table_all FOR EACH ROW EXECUTE FUNCTION double_salary()
+(1 row)
+
+-- Test index and constraint DDL export
+\i test/sql/get_ddl/get_ddl_index_constraint.sql
+SELECT dbms_metadata.get_ddl('INDEX','perf_index','gdmmm');
+                          get_ddl                           
+------------------------------------------------------------
+ CREATE INDEX perf_index ON gdmmm.table_all USING btree (c)
+(1 row)
+
+SELECT dbms_metadata.get_ddl('INDEX','Gin_Index_Name','gdmmm');
+                                             get_ddl                                              
+--------------------------------------------------------------------------------------------------
+ CREATE INDEX "Gin_Index_Name" ON gdmmm."Sample unlogged table" USING spgist ("name of customer")
+(1 row)
+
+SELECT dbms_metadata.get_ddl('CONSTRAINT','child_uniq','gdmmm');
+                                 get_ddl                                 
+-------------------------------------------------------------------------
+ ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT child_uniq UNIQUE (id)
+(1 row)
+
+SELECT dbms_metadata.get_ddl('CONSTRAINT','Unique age','gdmmm');
+                                       get_ddl                                        
+--------------------------------------------------------------------------------------
+ ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Unique age" UNIQUE ("Age")
+(1 row)
+
+SELECT dbms_metadata.get_ddl('CHECK_CONSTRAINT','check','gdmmm');
+                                                  get_ddl                                                   
+------------------------------------------------------------------------------------------------------------
+ ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "check" CHECK ("Birth_Date" > '01-01-1900'::date)
+(1 row)
+
+SELECT dbms_metadata.get_ddl('REF_CONSTRAINT','Fk_customer','gdmmm');
+                                                 get_ddl                                                 
+---------------------------------------------------------------------------------------------------------
+ ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT "Fk_customer" FOREIGN KEY (id) REFERENCES table_all(a)
+(1 row)
+
+-- tests for schema as NULL
+SET search_path TO public, gdmmm;
+SELECT dbms_metadata.get_ddl('INDEX','perf_index');
+                          get_ddl                           
+------------------------------------------------------------
+ CREATE INDEX perf_index ON gdmmm.table_all USING btree (c)
+(1 row)
+
+SELECT dbms_metadata.get_ddl('INDEX','Gin_Index_Name');
+                                             get_ddl                                              
+--------------------------------------------------------------------------------------------------
+ CREATE INDEX "Gin_Index_Name" ON gdmmm."Sample unlogged table" USING spgist ("name of customer")
+(1 row)
+
+SELECT dbms_metadata.get_ddl('CONSTRAINT','child_uniq');
+                                 get_ddl                                 
+-------------------------------------------------------------------------
+ ALTER TABLE gdmmm.table_all_child ADD CONSTRAINT child_uniq UNIQUE (id)
+(1 row)
+
+SELECT dbms_metadata.get_ddl('CONSTRAINT','Unique age');
+                                       get_ddl                                        
+--------------------------------------------------------------------------------------
+ ALTER TABLE gdmmm."Sample unlogged table" ADD CONSTRAINT "Unique age" UNIQUE ("Age")
+(1 row)
+
+-- Test type DDL export
+\i test/sql/get_ddl/get_ddl_type.sql
+SELECT dbms_metadata.get_ddl('TYPE','Address','gdmmm');
+                                       get_ddl                                        
+--------------------------------------------------------------------------------------
+ CREATE TYPE gdmmm."Address" AS ( "City" character varying, loc location, pin bigint)
+(1 row)
+
+SELECT dbms_metadata.get_ddl('TYPE','location','gdmmm');
+                                   get_ddl                                   
+-----------------------------------------------------------------------------
+ CREATE TYPE gdmmm.location AS ( lat double precision, lon double precision)
+(1 row)
+
+-- tests for schema as NULL
+SET search_path TO public, gdmmm;
+SELECT dbms_metadata.get_ddl('TYPE','Address');
+                                       get_ddl                                        
+--------------------------------------------------------------------------------------
+ CREATE TYPE gdmmm."Address" AS ( "City" character varying, loc location, pin bigint)
+(1 row)
+
+SELECT dbms_metadata.get_ddl('TYPE','location');
+                                   get_ddl                                   
+-----------------------------------------------------------------------------
+ CREATE TYPE gdmmm.location AS ( lat double precision, lon double precision)
+(1 row)
+
