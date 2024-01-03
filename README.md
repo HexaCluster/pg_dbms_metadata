@@ -46,7 +46,7 @@ Test of the extension can be done using:
     make installcheck
 ```
 
-If you just want to try out the extension or if you don't have the privileges to create an extension, you can just import the extension file into the database:
+If you don't want to create an extension for this, you can simply import the SQL file and use the complete functionality:
 ```
 psql -d mydb -c "CREATE SCHEMA dbms_metadata;"
 
