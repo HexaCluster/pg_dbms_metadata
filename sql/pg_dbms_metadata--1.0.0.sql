@@ -156,35 +156,35 @@ LANGUAGE plpgsql;
 CREATE FUNCTION dbms_metadata.init_transform_params()
 RETURNS void AS $$
 DECLARE
-    l_sqlterminator_guc boolean;
-    l_constraints_guc boolean;
-    l_ref_constraints_guc boolean;
-    l_partitioning_guc boolean;
-    l_segment_attributes_guc boolean;
-    l_storage_guc boolean;
+    l_sqlterminator_guc text;
+    l_constraints_guc text;
+    l_ref_constraints_guc text;
+    l_partitioning_guc text;
+    l_segment_attributes_guc text;
+    l_storage_guc text;
 BEGIN
     -- Initialize all transform params to their default values if they have not been set before
-    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR', true)::boolean INTO l_sqlterminator_guc;
+    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR', true) INTO l_sqlterminator_guc;
     IF l_sqlterminator_guc IS NULL THEN
         PERFORM set_config('DBMS_METADATA.SQLTERMINATOR', 'false', false);
     END IF;
-    SELECT current_setting('DBMS_METADATA.CONSTRAINTS', true)::boolean INTO l_constraints_guc;
+    SELECT current_setting('DBMS_METADATA.CONSTRAINTS', true) INTO l_constraints_guc;
     IF l_constraints_guc IS NULL THEN
         PERFORM set_config('DBMS_METADATA.CONSTRAINTS', 'true', false);
     END IF;
-    SELECT current_setting('DBMS_METADATA.REF_CONSTRAINTS', true)::boolean INTO l_ref_constraints_guc;
+    SELECT current_setting('DBMS_METADATA.REF_CONSTRAINTS', true) INTO l_ref_constraints_guc;
     IF l_ref_constraints_guc IS NULL THEN
         PERFORM set_config('DBMS_METADATA.REF_CONSTRAINTS', 'true', false);
     END IF;
-    SELECT current_setting('DBMS_METADATA.PARTITIONING', true)::boolean INTO l_partitioning_guc;
+    SELECT current_setting('DBMS_METADATA.PARTITIONING', true) INTO l_partitioning_guc;
     IF l_partitioning_guc IS NULL THEN
         PERFORM set_config('DBMS_METADATA.PARTITIONING', 'true', false);
     END IF;
-    SELECT current_setting('DBMS_METADATA.SEGMENT_ATTRIBUTES', true)::boolean INTO l_segment_attributes_guc;
+    SELECT current_setting('DBMS_METADATA.SEGMENT_ATTRIBUTES', true) INTO l_segment_attributes_guc;
     IF l_segment_attributes_guc IS NULL THEN
         PERFORM set_config('DBMS_METADATA.SEGMENT_ATTRIBUTES', 'true', false);
     END IF;
-    SELECT current_setting('DBMS_METADATA.STORAGE', true)::boolean INTO l_storage_guc;
+    SELECT current_setting('DBMS_METADATA.STORAGE', true) INTO l_storage_guc;
     IF l_storage_guc IS NULL THEN
         PERFORM set_config('DBMS_METADATA.STORAGE', 'true', false);
     END IF;
