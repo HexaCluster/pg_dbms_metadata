@@ -33,7 +33,10 @@ The following functions and stored procedures are implemented:
 To be able to run this extension, your PostgreSQL version must support extensions (>= 9.1).
 
 1. Copy the source code from repository.
-2. set pg_config binary location in PATH environment variable
+2. Set the pg_config binary location in the PATH environment variable. This can be done by running something like the below command, depending on your environment:
+```
+    export PATH=/usr/lib/postgresql/17/bin:$PATH
+```
 3. Execute following command to install this extension
 
 ```
@@ -41,18 +44,18 @@ To be able to run this extension, your PostgreSQL version must support extension
     sudo make install
 ```
 
-Test of the extension can be done using:
+4. Test of the extension can be done using below command. Before running the tests, ensure that your PostgreSQL service is running:
 ```
-    make installcheck
+    sudo make installcheck
 ```
 
-If you don't want to create an extension for this, you can simply import the SQL file and use the complete functionality:
+**Note**: If you don't want to create an extension for this, you can simply import the SQL file and use the complete functionality:
 ```
 psql -d mydb -c "CREATE SCHEMA dbms_metadata;"
 
 psql -d mydb -f sql/pg_dbms_metadata--1.0.0.sql
 ```
-This is especially useful for database in DBaas cloud services. To upgrade just import the extension upgrade files using psql.
+This is especially useful for database in DBaas cloud services(e.g., AWS RDS, Google Cloud SQL). To upgrade just import the extension upgrade files using psql.
 
 ## [Manage the extension](#manage-the-extension)
 
