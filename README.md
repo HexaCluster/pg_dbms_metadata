@@ -4,6 +4,8 @@ PostgreSQL extension to extract DDL of database objects in a way compatible to O
 
 Information about the Oracle DBMS_metadata package can be found [here](https://docs.oracle.com/en/database/oracle/oracle-database/19/arpls/DBMS_METADATA.html)
 
+The extension has been successfully tested with PostgreSQL versions 9.1 through 17
+
 * [Description](#description)
 * [Installation](#installation)
 * [Manage the extension](#manage-the-extension)
