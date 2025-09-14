@@ -89,7 +89,7 @@ Below is list of currently supported object types. To get a ddl of a check const
 * CHECK_CONSTRAINT
 * REF_CONSTRAINT
 * TYPE
-* ENUM.
+* ENUM
 
 Syntax:
 ```
