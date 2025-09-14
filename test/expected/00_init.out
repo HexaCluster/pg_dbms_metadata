@@ -5,13 +5,18 @@ CREATE EXTENSION pg_dbms_metadata;
 -- Create all objects used in the regression tests
 CREATE SCHEMA gdmmm;
 ----
+-- Enum 1
+----
+CREATE TYPE gdmmm.enum_abc AS ENUM ('a', 'b', 'c');
+----
 -- Table 1
 ----
 CREATE TABLE gdmmm.table_all (
     a serial PRIMARY KEY,   -- dependent sequence test
     b int NOT NULL, -- NOT NULL test
     c varchar(20) DEFAULT 'def',    -- default value test
-    d int UNIQUE
+    d int UNIQUE,
+    e gdmmm.enum_abc
 ) WITH (
     autovacuum_enabled = false,            
     fillfactor = 70,                       

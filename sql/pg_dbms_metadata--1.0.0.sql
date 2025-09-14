@@ -34,6 +34,8 @@ BEGIN
         l_return := dbms_metadata.get_ref_constraint_ddl (schema, name);
     WHEN 'TYPE' THEN
         l_return := dbms_metadata.get_type_ddl (schema, name);
+    WHEN 'ENUM' THEN
+        l_return := dbms_metadata.get_enum_ddl(schema, name);
     ELSE
         -- Need to add other object types
         RAISE EXCEPTION 'Unknown type';
@@ -68,6 +70,8 @@ BEGIN
         l_return := dbms_metadata.get_ref_constraints_ddl_of_table (base_object_schema, base_object_name);
     WHEN 'INDEX' THEN
         l_return := dbms_metadata.get_indexes_ddl_of_table (base_object_schema, base_object_name);
+    WHEN 'ENUM' THEN
+        l_return := dbms_metadata.get_enums_ddl_of_table(base_object_schema, base_object_name);
     ELSE
         -- Need to add other object types
         RAISE EXCEPTION 'Unknown type';
@@ -874,6 +878,53 @@ COMMENT ON FUNCTION dbms_metadata.get_type_ddl (text, text) IS 'This function re
 
 REVOKE ALL ON FUNCTION dbms_metadata.get_type_ddl FROM PUBLIC;
 
+CREATE OR REPLACE FUNCTION dbms_metadata.get_enum_ddl(schema_name text, enum_name text)
+RETURNS text AS $$
+DECLARE
+    l_oid oid;
+    l_create_statement text;
+    l_sqlterminator_guc boolean;
+BEGIN
+    -- Initialize transform params if they have not been set before
+    PERFORM dbms_metadata.init_transform_params();
+
+    -- Getting values of transform params
+    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
+
+    SELECT dbms_metadata.get_object_oid('ENUM', schema_name, enum_name) INTO l_oid;
+
+    WITH enum_values AS (
+    SELECT
+        format_type(e.enumtypid, -1) AS enumname,
+        string_agg(quote_literal(e.enumlabel), ', ' ORDER BY e.enumsortorder) AS enumvalues
+    FROM
+        pg_enum e
+    WHERE
+        e.enumtypid = l_oid
+    GROUP BY enumname
+    )
+    SELECT 'CREATE TYPE ' || ev.enumname || ' AS ENUM (' || ev.enumvalues || ')'
+    INTO STRICT l_create_statement
+    FROM enum_values ev;
+
+    IF l_sqlterminator_guc THEN
+        l_create_statement := concat(l_create_statement, ';');
+    END IF;
+    RETURN l_create_statement;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        IF p_schema IS NULL THEN
+            RAISE EXCEPTION 'Enum % does not exist. Please provide schema name.', p_type_name;
+        ELSE
+            RAISE EXCEPTION 'Enum % does not exist in schema %', p_type_name, p_schema;
+        END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION dbms_metadata.get_enum_ddl (text, text) IS 'This function retrieves DDL of an enum';
+
+REVOKE ALL ON FUNCTION dbms_metadata.get_enum_ddl FROM PUBLIC;
+
 ------------------------------------------------------------------------------
 -- DBMS_METADATA.GET_DEPENDENT_DDL utility functions
 ------------------------------------------------------------------------------
@@ -1233,6 +1284,61 @@ COMMENT ON FUNCTION dbms_metadata.get_triggers_ddl_of_table (text, text) IS 'Thi
 
 REVOKE ALL ON FUNCTION dbms_metadata.get_triggers_ddl_of_table FROM PUBLIC;
 
+----
+-- DBMS_METADATA.GET_ENUMS_DDL_OF_TABLE
+----
+CREATE OR REPLACE FUNCTION dbms_metadata.get_enums_ddl_of_table(schema_name text, table_name text)
+RETURNS text AS
+$$
+DECLARE
+    l_oid oid;
+    enum_def text;
+    l_return text := '';
+    l_sqlterminator_guc boolean;
+BEGIN
+    -- Initialize transform params if they have not been set before
+    PERFORM dbms_metadata.init_transform_params();
+
+    -- Getting values of transform params
+    SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
+
+    -- Getting the OID of the table
+    SELECT dbms_metadata.get_object_oid('TABLE', schema_name, table_name) INTO l_oid;
+
+    FOR enum_def IN
+        WITH tabenum AS (
+        SELECT
+            format_type(a.atttypid, a.atttypmod) AS enumname,
+            string_agg(quote_literal(e.enumlabel), ', ' ORDER BY e.enumsortorder) AS enumvalues
+        FROM
+            pg_attribute a
+            INNER JOIN pg_enum e ON a.atttypid = e.enumtypid
+        WHERE
+            a.attname NOT IN ('tableoid', 'cmax', 'xmax', 'cmin', 'xmin', 'ctid')
+            AND NOT attisdropped
+            AND a.attrelid = l_oid
+        GROUP BY enumname
+        ORDER BY enumname
+        )
+        SELECT 'CREATE TYPE ' || te.enumname || ' AS ENUM (' || te.enumvalues || ')'
+        FROM tabenum te
+    LOOP
+        l_return := l_return || enum_def || CASE l_sqlterminator_guc WHEN TRUE THEN ';' ELSE '' END || E'\n\n';
+    END LOOP;
+
+    IF l_return IS NULL OR l_return = '' THEN
+        RAISE EXCEPTION 'specified object of type ENUM not found';
+    END IF;
+
+    RETURN l_return;
+END;
+$$
+LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION dbms_metadata.get_enums_ddl_of_table (text, text) IS 'This function retrieves DDL of all enums of provided table';
+
+REVOKE ALL ON FUNCTION dbms_metadata.get_enums_ddl_of_table FROM PUBLIC;
+
 ------------------------------------------------------------------------------
 -- DBMS_METADATA.GET_GRANTED_DDL utility functions
 ------------------------------------------------------------------------------
@@ -1291,6 +1397,7 @@ DECLARE
     l_schema_oid oid;
     l_pg_class_objs text[] := ARRAY['TABLE', 'VIEW', 'SEQUENCE', 'INDEX', 'CONSTRAINT', 'REF_CONSTRAINT', 'TYPE'];
     l_pg_proc_objs text[] := ARRAY['PROCEDURE', 'FUNCTION'];
+    l_pg_type_objs text[] := ARRAY['ENUM'];
 BEGIN
     IF p_schema IS NOT NULL THEN
         SELECT dbms_metadata.get_schema_oid(p_schema) INTO l_schema_oid;
@@ -1319,6 +1426,18 @@ BEGIN
             WHERE
                 proname = p_object_name
                 AND pronamespace = l_schema_oid;
+        END IF;
+    ELSIF p_object_type = ANY(l_pg_type_objs) THEN
+        IF p_schema IS NULL THEN
+            SELECT quote_ident(p_object_name)::regtype::oid INTO STRICT l_oid;
+        ELSE
+            SELECT
+                oid INTO STRICT l_oid
+            FROM
+                pg_type
+            WHERE
+                typname = p_object_name
+                AND typnamespace = l_schema_oid;
         END IF;
     END IF;
 

@@ -10,10 +10,10 @@ The extension has been successfully tested with PostgreSQL versions 9.1 through 
 * [Installation](#installation)
 * [Manage the extension](#manage-the-extension)
 * [Functions](#functions)
-  - [GET_DDL](#get_ddl)
-  - [GET_DEPENDENT_DDL](#get_dependent_ddl)
-  - [GET_GRANTED_DDL](#get_granted_ddl)
-  - [SET_TRANSFORM_PARAM](#set_transform_param)
+  - [GET\_DDL](#get_ddl)
+  - [GET\_DEPENDENT\_DDL](#get_dependent_ddl)
+  - [GET\_GRANTED\_DDL](#get_granted_ddl)
+  - [SET\_TRANSFORM\_PARAM](#set_transform_param)
 * [Authors](#authors)
 * [License](#license)
 
@@ -78,17 +78,18 @@ To upgrade to a new version execute:
 This function extracts DDL of database objects. 
 
 Below is list of currently supported object types. To get a ddl of a check constraint, unlike Oracle you need to use CHECK_CONSTRAINT object type. In Oracle, we will use the CONSTRAINT object type to get ddl of a check constraint.
-* TABLE 
-* VIEW 
-* SEQUENCE 
-* PROCEDURE 
-* FUNCTION 
+* TABLE
+* VIEW
+* SEQUENCE
+* PROCEDURE
+* FUNCTION
 * TRIGGER
-* INDEX 
-* CONSTRAINT 
+* INDEX
+* CONSTRAINT
 * CHECK_CONSTRAINT
 * REF_CONSTRAINT
 * TYPE
+* ENUM.
 
 Syntax:
 ```
@@ -118,7 +119,8 @@ Below is the list of currently supported dependent object types
 * TRIGGER
 * CONSTRAINT
 * REF_CONSTRAINT
-* INDEX.
+* INDEX
+* ENUM.
 
 Syntax:
 ```

@@ -139,3 +139,22 @@ SELECT dbms_metadata.get_dependent_ddl('TRIGGER','table_all','gdmmm');
  
 (1 row)
 
+-- test for retrieving dependent enum ddl
+\i test/sql/get_dependent_ddl/get_dependent_ddl_enum.sql
+SELECT dbms_metadata.get_dependent_ddl('ENUM','table_all','gdmmm');
+                 get_dependent_ddl                  
+----------------------------------------------------
+ CREATE TYPE gdmmm.enum_abc AS ENUM ('a', 'b', 'c')+
+                                                   +
+ 
+(1 row)
+
+-- tests for schema as NULL
+SET search_path TO public, gdmmm;
+SELECT dbms_metadata.get_dependent_ddl('ENUM','table_all');
+              get_dependent_ddl               
+----------------------------------------------
+ CREATE TYPE enum_abc AS ENUM ('a', 'b', 'c')+
+                                             +
+
+(1 row)
