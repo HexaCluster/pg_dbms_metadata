@@ -120,7 +120,7 @@ Below is the list of currently supported dependent object types
 * CONSTRAINT
 * REF_CONSTRAINT
 * INDEX
-* ENUM.
+* ENUM
 
 Syntax:
 ```
