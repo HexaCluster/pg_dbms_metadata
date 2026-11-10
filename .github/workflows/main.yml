@@ -19,8 +19,15 @@ jobs:
         run: pg-start ${{ matrix.pg }}
       - name: Check out the repository
         uses: actions/checkout@v4
+        with:
+          # tags are needed to test upgrades from the released versions
+          fetch-depth: 0
       - name: Build, install and run regression tests
         run: pg-build-test
+      - name: Test upgrades from released versions
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          test/upgrade_check.sh
       - name: Upload regression diffs on failure
         if: failure()
         uses: actions/upload-artifact@v4

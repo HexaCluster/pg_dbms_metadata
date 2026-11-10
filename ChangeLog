@@ -21,7 +21,8 @@ several bugs and standardizes the parameter names of internal functions.
     and <object>_name. The public API keeps the Oracle parameter names.
     Thanks to Julien Monticolo for the report.
   - Fix regression tests and add a GitHub Actions workflow running them
-    on PostgreSQL 12 to 19.
+    on PostgreSQL 12 to 19, together with a test of the upgrade from each
+    released version (test/upgrade_check.sh).
 
 To upgrade an existing installation run:
 
