@@ -1,7 +1,7 @@
 -- Test tables DDL export
 \i test/sql/get_ddl/get_ddl_table.sql
 SELECT dbms_metadata.get_ddl('TABLE','table_all','gdmmm');
-                                                                                                                                                                           get_ddl                                                                                                                                                                          
+                                                                                                                                                                          get_ddl                                                                                                                                                                           
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
  -- Table definition                                                                                                                                                                                                                                                                                                                                       +
  CREATE TABLE gdmmm.table_all (a integer DEFAULT nextval('gdmmm.table_all_a_seq'::regclass) NOT NULL,b integer  NOT NULL,c character varying(20) DEFAULT 'def'::character varying,d integer ,e gdmmm.enum_abc ) WITH (autovacuum_enabled=false,fillfactor=70,toast_tuple_target=200,autovacuum_vacuum_scale_factor=0.2,autovacuum_analyze_scale_factor=0.1)+
@@ -346,10 +346,12 @@ SELECT dbms_metadata.get_ddl('TYPE','location');
  CREATE TYPE gdmmm.location AS ( lat double precision, lon double precision)
 (1 row)
 
+-- Test enum DDL export
+\i test/sql/get_ddl/get_ddl_enum.sql
 SELECT dbms_metadata.get_ddl('ENUM','enum_abc','gdmmm');
-                      get_ddl                       
-----------------------------------------------------
- CREATE TYPE gdmmm.enum_abc AS ENUM ('a', 'b', 'c')
+                   get_ddl                    
+----------------------------------------------
+ CREATE TYPE enum_abc AS ENUM ('a', 'b', 'c')
 (1 row)
 
 -- tests for schema as NULL
@@ -359,3 +361,4 @@ SELECT dbms_metadata.get_ddl('ENUM','enum_abc');
 ----------------------------------------------
  CREATE TYPE enum_abc AS ENUM ('a', 'b', 'c')
 (1 row)
+

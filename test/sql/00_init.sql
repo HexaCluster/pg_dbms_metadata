@@ -28,11 +28,13 @@ CREATE TABLE gdmmm.table_all (
     autovacuum_analyze_scale_factor = 0.1  
 );
 
-COMMENT ON TABLE gdmmm.table_all IS 'This is a comment for the table.';
+COMMENT ON TABLE gdmmm.table_all IS 'This is a comment for the table. It''s also a comment with a quote.';
 
 COMMENT ON COLUMN gdmmm.table_all.a IS 'This is a comment for the column.';
 
 COMMENT ON COLUMN gdmmm.table_all.b IS 'This is a comment for the column.';
+
+COMMENT ON COLUMN gdmmm.table_all.c IS 'It''s a comment with a quote for the column.';
 
 CREATE INDEX perf_index ON gdmmm.table_all (c);
 

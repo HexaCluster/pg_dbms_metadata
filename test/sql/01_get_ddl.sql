@@ -19,3 +19,5 @@
 -- Test type DDL export
 \i test/sql/get_ddl/get_ddl_type.sql
 
+-- Test enum DDL export
+\i test/sql/get_ddl/get_ddl_enum.sql

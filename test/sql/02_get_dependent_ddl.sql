@@ -7,3 +7,5 @@
 -- test for retrieving dependent trigger ddl
 \i test/sql/get_dependent_ddl/get_dependent_ddl_trigger.sql
 
+-- test for retrieving dependent enum ddl
+\i test/sql/get_dependent_ddl/get_dependent_ddl_enum.sql
