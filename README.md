@@ -4,7 +4,7 @@ PostgreSQL extension to extract DDL of database objects in a way compatible to O
 
 Information about the Oracle DBMS_metadata package can be found [here](https://docs.oracle.com/en/database/oracle/oracle-database/19/arpls/DBMS_METADATA.html)
 
-The extension has been successfully tested with PostgreSQL versions 9.1 through 17
+The extension has been successfully tested with PostgreSQL versions 9.1 through 18
 
 * [Description](#description)
 * [Installation](#installation)
@@ -37,7 +37,7 @@ To be able to run this extension, your PostgreSQL version must support extension
 1. Copy the source code from repository.
 2. Set the pg_config binary location in the PATH environment variable. This can be done by running something like the below command, depending on your environment:
 ```
-    export PATH=/usr/lib/postgresql/17/bin:$PATH
+    export PATH=/usr/lib/postgresql/18/bin:$PATH
 ```
 3. Execute following command to install this extension
 
@@ -55,7 +55,7 @@ To be able to run this extension, your PostgreSQL version must support extension
 ```
 psql -d mydb -c "CREATE SCHEMA dbms_metadata;"
 
-psql -d mydb -f sql/pg_dbms_metadata--1.0.0.sql
+psql -d mydb -f sql/pg_dbms_metadata--1.1.0.sql
 ```
 This is especially useful for database in DBaas cloud services(e.g., AWS RDS, Google Cloud SQL). To upgrade just import the extension upgrade files using psql.
 
@@ -218,4 +218,4 @@ CALL dbms_metadata.set_transform_param('SQLTERMINATOR',true);
 This extension is free software distributed under the PostgreSQL
 License.
 
-    Copyright (c) 2023 HexaCluster Corp.
+    Copyright (c) 2023-2026 HexaCluster Corp.
