@@ -105,6 +105,11 @@ Parameters:
 - name: Name of object 
 - schema: Schema in which object is present. When schema is not provided search_path is used to find the object and get ddl. However schema cannot be NULL for object types TRIGGER, REF_CONSTRAINT.
 
+Overloaded procedures and functions: when several PROCEDURE or FUNCTION share the same name, the DDL of all of them is returned, ordered by their argument list. To get the DDL of one of them only, append its argument types to the name, for example:
+```
+SELECT dbms_metadata.get_ddl('FUNCTION','my_function(char, char)','my_schema');
+```
+
 Example:
 ```
 SELECT dbms_metadata.get_ddl('TABLE','employees','gdmmm');

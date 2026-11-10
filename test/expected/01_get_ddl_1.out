@@ -362,3 +362,98 @@ SELECT dbms_metadata.get_ddl('ENUM','enum_abc');
  CREATE TYPE enum_abc AS ENUM ('a', 'b', 'c')
 (1 row)
 
+-- Test overloaded routines DDL export
+\i test/sql/get_ddl/get_ddl_routine_overload.sql
+RESET search_path;
+-- all overloaded functions are returned, the procedure is not
+SELECT dbms_metadata.get_ddl('FUNCTION','overloaded_routine','gdmmm');
+                                get_ddl                                 
+------------------------------------------------------------------------
+ CREATE OR REPLACE FUNCTION gdmmm.overloaded_routine(a text)           +
+  RETURNS text                                                         +
+  LANGUAGE sql                                                         +
+ AS $function$ SELECT a $function$                                     +
+                                                                       +
+ CREATE OR REPLACE FUNCTION gdmmm.overloaded_routine(a text, b integer)+
+  RETURNS text                                                         +
+  LANGUAGE sql                                                         +
+ AS $function$ SELECT repeat(a, b) $function$                          +
+ 
+(1 row)
+
+-- only the procedure is returned
+SELECT dbms_metadata.get_ddl('PROCEDURE','overloaded_routine','gdmmm');
+                        get_ddl                         
+--------------------------------------------------------
+ CREATE OR REPLACE PROCEDURE gdmmm.overloaded_routine()+
+  LANGUAGE sql                                         +
+ AS $procedure$ SELECT 1 $procedure$                   +
+ 
+(1 row)
+
+-- a single overloaded function is selected by its argument list
+SELECT dbms_metadata.get_ddl('FUNCTION','overloaded_routine(text, integer)','gdmmm');
+                                get_ddl                                 
+------------------------------------------------------------------------
+ CREATE OR REPLACE FUNCTION gdmmm.overloaded_routine(a text, b integer)+
+  RETURNS text                                                         +
+  LANGUAGE sql                                                         +
+ AS $function$ SELECT repeat(a, b) $function$                          +
+ 
+(1 row)
+
+SELECT dbms_metadata.get_ddl('FUNCTION','overloaded_routine(text)','gdmmm');
+                           get_ddl                           
+-------------------------------------------------------------
+ CREATE OR REPLACE FUNCTION gdmmm.overloaded_routine(a text)+
+  RETURNS text                                              +
+  LANGUAGE sql                                              +
+ AS $function$ SELECT a $function$                          +
+ 
+(1 row)
+
+-- SQLTERMINATOR is applied to each overloaded function
+CALL dbms_metadata.set_transform_param('SQLTERMINATOR', true);
+SELECT dbms_metadata.get_ddl('FUNCTION','overloaded_routine','gdmmm');
+                                get_ddl                                 
+------------------------------------------------------------------------
+ CREATE OR REPLACE FUNCTION gdmmm.overloaded_routine(a text)           +
+  RETURNS text                                                         +
+  LANGUAGE sql                                                         +
+ AS $function$ SELECT a $function$                                     +
+ ;                                                                     +
+ CREATE OR REPLACE FUNCTION gdmmm.overloaded_routine(a text, b integer)+
+  RETURNS text                                                         +
+  LANGUAGE sql                                                         +
+ AS $function$ SELECT repeat(a, b) $function$                          +
+ ;
+(1 row)
+
+CALL dbms_metadata.set_transform_param('SQLTERMINATOR', false);
+-- tests for schema as NULL
+SET search_path TO public, gdmmm;
+SELECT dbms_metadata.get_ddl('FUNCTION','overloaded_routine');
+                                get_ddl                                 
+------------------------------------------------------------------------
+ CREATE OR REPLACE FUNCTION gdmmm.overloaded_routine(a text)           +
+  RETURNS text                                                         +
+  LANGUAGE sql                                                         +
+ AS $function$ SELECT a $function$                                     +
+                                                                       +
+ CREATE OR REPLACE FUNCTION gdmmm.overloaded_routine(a text, b integer)+
+  RETURNS text                                                         +
+  LANGUAGE sql                                                         +
+ AS $function$ SELECT repeat(a, b) $function$                          +
+ 
+(1 row)
+
+SELECT dbms_metadata.get_ddl('FUNCTION','overloaded_routine(text)');
+                           get_ddl                           
+-------------------------------------------------------------
+ CREATE OR REPLACE FUNCTION gdmmm.overloaded_routine(a text)+
+  RETURNS text                                              +
+  LANGUAGE sql                                              +
+ AS $function$ SELECT a $function$                          +
+ 
+(1 row)
+

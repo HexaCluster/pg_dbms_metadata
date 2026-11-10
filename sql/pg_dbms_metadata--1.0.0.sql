@@ -533,9 +533,12 @@ CREATE OR REPLACE FUNCTION dbms_metadata.get_routine_ddl (schema_name text, rout
     RETURNS text
     AS $$
 DECLARE
-    l_oid oid;
+    l_schema_oid oid;
+    l_signature oid;
+    l_paren integer;
+    routine_def text;
     routine_code text;
-    routine_type_flag text;
+    routine_type_flag "char";
     l_sqlterminator_guc boolean;
 BEGIN
     -- Initialize transform params if they have not been set before
@@ -550,27 +553,70 @@ BEGIN
         routine_type_flag = 'f';
     END CASE;
 
-    SELECT dbms_metadata.get_object_oid(routine_type, schema_name, routine_name) INTO l_oid;
-
-    SELECT
-        pg_get_functiondef(p.oid) INTO STRICT routine_code
-    FROM
-        pg_proc p
-    WHERE
-        p.oid = l_oid
-        AND p.prokind = routine_type_flag;
-
-    IF l_sqlterminator_guc THEN
-        routine_code := concat(routine_code, ';');
+    IF schema_name IS NOT NULL THEN
+        SELECT dbms_metadata.get_schema_oid(schema_name) INTO l_schema_oid;
     END IF;
-    RETURN routine_code;
-EXCEPTION
-    WHEN NO_DATA_FOUND THEN
+
+    -- A routine name followed by its argument list, for example
+    -- 'my_function(char, char)', selects one overloaded routine only.
+    -- This is only tried when no routine has exactly that name, because
+    -- before PostgreSQL 16 to_regprocedure() raises an error on bad syntax.
+    l_paren := strpos(routine_name, '(');
+    IF l_paren > 1 AND right(routine_name, 1) = ')'
+       AND NOT EXISTS (
+           SELECT 1 FROM pg_proc p
+           WHERE p.proname = routine_name
+             AND p.prokind = routine_type_flag
+             AND (l_schema_oid IS NULL OR p.pronamespace = l_schema_oid)
+       )
+    THEN
+        SELECT to_regprocedure(
+                   CASE WHEN schema_name IS NULL THEN '' ELSE quote_ident(schema_name) || '.' END
+                   || quote_ident(btrim(left(routine_name, l_paren - 1)))
+                   || substr(routine_name, l_paren)
+               )::oid INTO l_signature;
+    END IF;
+
+    -- Without argument list, all overloaded routines with that name are
+    -- returned, ordered by their argument list so that the output is stable.
+    FOR routine_def IN
+        SELECT
+            pg_get_functiondef(p.oid)
+        FROM
+            pg_proc p
+        WHERE
+            p.prokind = routine_type_flag
+            AND (
+                p.oid = l_signature
+                OR (
+                    p.proname = routine_name
+                    AND CASE WHEN l_schema_oid IS NULL THEN pg_function_is_visible(p.oid)
+                             ELSE p.pronamespace = l_schema_oid
+                        END
+                )
+            )
+        ORDER BY
+            pg_get_function_identity_arguments(p.oid)
+    LOOP
+        IF l_sqlterminator_guc THEN
+            routine_def := concat(routine_def, ';');
+        END IF;
+        IF routine_code IS NULL THEN
+            routine_code := routine_def;
+        ELSE
+            routine_code := concat(routine_code, E'\n', routine_def);
+        END IF;
+    END LOOP;
+
+    IF routine_code IS NULL THEN
         IF schema_name IS NULL THEN
             RAISE EXCEPTION '% with name % not found. Please provide schema name.', routine_type, routine_name;
         ELSE
             RAISE EXCEPTION '% with name % not found in schema %', routine_type, routine_name, schema_name;
         END IF;
+    END IF;
+
+    RETURN routine_code;
 END;
 $$
 LANGUAGE plpgsql;

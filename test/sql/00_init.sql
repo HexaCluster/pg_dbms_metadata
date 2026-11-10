@@ -186,6 +186,23 @@ END
 $BODY$;
 
 ----
+-- Overloaded functions and procedures
+----
+CREATE FUNCTION gdmmm.overloaded_routine (a text)
+    RETURNS text
+    LANGUAGE sql
+    AS $$ SELECT a $$;
+
+CREATE FUNCTION gdmmm.overloaded_routine (a text, b integer)
+    RETURNS text
+    LANGUAGE sql
+    AS $$ SELECT repeat(a, b) $$;
+
+CREATE PROCEDURE gdmmm.overloaded_routine ()
+    LANGUAGE sql
+    AS $$ SELECT 1 $$;
+
+----
 -- Users and Roles
 ----
 CREATE ROLE "Dbms_Metadata_test_user2873487";

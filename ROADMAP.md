@@ -24,7 +24,7 @@ The following outlines the supported PostgreSQL objects for GET_DDL, along with 
 - USER/ROLE
 - ✔︎ PARTITION TABLES(ONLY PARENT)
 - PARTITION TABLES(CHILD TABLES)
-- Generating DDL for OVERLOADED PROCEDURES/FUNCTIONS
+- ✔︎ Generating DDL for OVERLOADED PROCEDURES/FUNCTIONS
 - TEMP TABLES
 - Including IF NOT EXISTS & CREATE OR REPLACE clauses in DDL
 
