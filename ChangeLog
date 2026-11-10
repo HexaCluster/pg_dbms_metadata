@@ -1,3 +1,32 @@
+2026-11-10: Version 1.1.0
+
+This release adds support for ENUM types and overloaded routines, fixes
+several bugs and standardizes the parameter names of internal functions.
+
+  - Add ENUM object type to get_ddl() and get_dependent_ddl(). Thanks to
+    Julien Monticolo for the patch.
+  - Qualify enum names with their schema when a schema is given, the
+    output no longer depends on the search_path.
+  - Fix get_ddl() for overloaded procedures and functions: the DDL of all
+    the routines with the given name is returned, a single one can be
+    selected by appending its argument types to the name, for example
+    'my_function(char, char)'. Thanks to loicmalassis for the report.
+  - Fix comments containing a quote in the table DDL. Thanks to Julien
+    Monticolo for the patch.
+  - Fix setting the default value of boolean transform params. Thanks to
+    lilw5 for the patch.
+  - Fix error handlers of get_type_ddl() and get_enum_ddl() that were
+    referencing nonexistent variables.
+  - Standardize the parameter names of internal functions: schema_name
+    and <object>_name. The public API keeps the Oracle parameter names.
+    Thanks to Julien Monticolo for the report.
+  - Fix regression tests and add a GitHub Actions workflow running them
+    on PostgreSQL 12 to 19.
+
+To upgrade an existing installation run:
+
+    ALTER EXTENSION pg_dbms_metadata UPDATE TO "1.1.0";
+
 2023-08-09: Version 1.0.0
 
   - Initial release

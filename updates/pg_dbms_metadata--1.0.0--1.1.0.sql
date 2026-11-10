@@ -1,10 +1,26 @@
-----
--- Script to create the objects of the pg_dbms_metadata extension
-----
+-- complain if script is sourced in psql, rather than via ALTER EXTENSION
+\echo Use "ALTER EXTENSION pg_dbms_metadata UPDATE TO '1.1.0'" to load this file. \quit
 
 ----
--- DBMS_METADATA.GET_DDL
+-- Functions whose parameters have been renamed must be dropped first,
+-- CREATE OR REPLACE FUNCTION cannot change the name of a parameter.
 ----
+DROP FUNCTION dbms_metadata.get_constraints_ddl_of_table(text, text);
+DROP FUNCTION dbms_metadata.get_granted_roles_ddl(text);
+DROP FUNCTION dbms_metadata.get_indexes_ddl_of_table(text, text);
+DROP FUNCTION dbms_metadata.get_object_oid(text, text, text);
+DROP FUNCTION dbms_metadata.get_ref_constraints_ddl_of_table(text, text);
+DROP FUNCTION dbms_metadata.get_schema_oid(text);
+DROP FUNCTION dbms_metadata.get_sequence_ddl(text, text);
+DROP FUNCTION dbms_metadata.get_sequence_ddl_of_table(text, text);
+DROP FUNCTION dbms_metadata.get_table_ddl(text, text);
+DROP FUNCTION dbms_metadata.get_type_ddl(text, text);
+DROP FUNCTION dbms_metadata.get_view_ddl(text, text);
+
+----
+-- New and modified functions
+----
+
 CREATE OR REPLACE FUNCTION dbms_metadata.get_ddl (object_type text, name text, schema text DEFAULT NULL)
     RETURNS text
     AS $$
@@ -49,9 +65,6 @@ COMMENT ON FUNCTION dbms_metadata.get_ddl (text, text, text) IS 'Retrieves DDL o
 
 REVOKE ALL ON FUNCTION dbms_metadata.get_ddl FROM PUBLIC;
 
-----
--- DBMS_METADATA.GET_DEPENDENT_DDL
-----
 CREATE OR REPLACE FUNCTION dbms_metadata.get_dependent_ddl (object_type text, base_object_name text, base_object_schema text DEFAULT NULL)
     RETURNS text
     AS $$
@@ -85,79 +98,7 @@ COMMENT ON FUNCTION dbms_metadata.get_dependent_ddl (text, text, text) IS 'Retri
 
 REVOKE ALL ON FUNCTION dbms_metadata.get_dependent_ddl FROM PUBLIC;
 
-----
--- DBMS_METADATA.GET_GRANTED_DDL
-----
-CREATE OR REPLACE FUNCTION dbms_metadata.get_granted_ddl (object_type text, grantee text)
-    RETURNS text
-    AS $$
-DECLARE
-    l_return text;
-BEGIN
-    -- Initialize transform params if they have not been set before
-    PERFORM dbms_metadata.init_transform_params();
-
-    CASE object_type
-    WHEN 'ROLE_GRANT' THEN
-        l_return := dbms_metadata.get_granted_roles_ddl (grantee);
-    ELSE
-        -- Need to add other object types
-        RAISE EXCEPTION 'Unknown type';
-    END CASE;
-    RETURN l_return;
-END;
-$$
-LANGUAGE PLPGSQL;
-
-COMMENT ON FUNCTION dbms_metadata.get_granted_ddl (text, text) IS 'Retrieves the SQL statements to recreate granted privileges and roles for a specified grantee.';
-
-REVOKE ALL ON FUNCTION dbms_metadata.get_granted_ddl FROM PUBLIC;
-
-
-----
--- DBMS_METADATA.SET_TRANSFORM_PARAM
-----
-CREATE OR REPLACE PROCEDURE dbms_metadata.set_transform_param(name text, value text)
-    AS $$
-DECLARE
-    l_allowed_names text[] := ARRAY[];
-BEGIN
-    IF NOT name = ANY(l_allowed_names) THEN
-        RAISE EXCEPTION 'Name:% is not supported for value as text', name;
-        RETURN;
-    END IF;
-    PERFORM set_config('DBMS_METADATA.' || name, value, false);
-END;
-$$
-LANGUAGE plpgsql;
-
-COMMENT ON PROCEDURE dbms_metadata.set_transform_param (text, text) IS 'Used to customize DDL through configuring session-level transform params.';
-
-REVOKE ALL ON PROCEDURE dbms_metadata.set_transform_param FROM PUBLIC;
-
-CREATE OR REPLACE PROCEDURE dbms_metadata.set_transform_param(name text, value boolean DEFAULT true)
-    AS $$
-DECLARE
-    l_allowed_names text[] := ARRAY['DEFAULT', 'SQLTERMINATOR', 'CONSTRAINTS', 'REF_CONSTRAINTS', 'PARTITIONING', 'SEGMENT_ATTRIBUTES', 'STORAGE'];
-BEGIN
-    IF NOT name = ANY(l_allowed_names) THEN
-        RAISE EXCEPTION 'Name:% is not supported for value as boolean', name;
-        RETURN;
-    ELSIF name = 'DEFAULT' THEN
-        IF value THEN
-            PERFORM dbms_metadata.set_default_transform_params();
-        END IF;
-    ELSE
-        PERFORM set_config('DBMS_METADATA.' || name, value::text, false);
-    END IF;
-END;
-$$
-LANGUAGE plpgsql;
-
-----
--- DBMS_METADATA.INIT_TRANSFORM_PARAMS
-----
-CREATE FUNCTION dbms_metadata.init_transform_params()
+CREATE OR REPLACE FUNCTION dbms_metadata.init_transform_params()
 RETURNS void AS $$
 DECLARE
     l_sqlterminator_guc text;
@@ -196,40 +137,7 @@ END;
 $$
 LANGUAGE plpgsql IMMUTABLE;
 
-----
--- DBMS_METADATA.SET_DEFAULT_TRANSFORM_PARAMS
-----
-CREATE FUNCTION dbms_metadata.set_default_transform_params()
-RETURNS void AS $$
-BEGIN
-    -- If true, Append a SQL terminator
-    PERFORM set_config('DBMS_METADATA.SQLTERMINATOR', 'false', false);
-    -- If true, include all non-referential table constraints
-    PERFORM set_config('DBMS_METADATA.CONSTRAINTS', 'true', false);
-    -- If true, include all referential constraints
-    PERFORM set_config('DBMS_METADATA.REF_CONSTRAINTS', 'true', false);
-    -- If TRUE, include partitioning clauses in the DDL
-    PERFORM set_config('DBMS_METADATA.PARTITIONING', 'true', false);
-    -- If TRUE, include segment attributes clauses in the DDL
-    PERFORM set_config('DBMS_METADATA.SEGMENT_ATTRIBUTES', 'true', false);
-    -- If TRUE, include storage clauses in the DDL. Ignored if SEGMENT_ATTRIBUTES is FALSE
-    PERFORM set_config('DBMS_METADATA.STORAGE', 'true', false);
-END;
-$$
-LANGUAGE plpgsql IMMUTABLE;
-
-COMMENT ON FUNCTION dbms_metadata.set_default_transform_params() IS 'Used to set default values to all transform params.';
-
-REVOKE ALL ON FUNCTION dbms_metadata.set_default_transform_params FROM PUBLIC;
-
-------------------------------------------------------------------------------
--- DBMS_METADATA.GET_DDL utility functions
-------------------------------------------------------------------------------
-
-----
--- DBMS_METADATA.GET_TABLE_DDL
-----
-CREATE OR REPLACE FUNCTION dbms_metadata.get_table_ddl (p_schema text, p_table text)
+CREATE OR REPLACE FUNCTION dbms_metadata.get_table_ddl (schema_name text, table_name text)
     RETURNS text
     AS $$
 DECLARE
@@ -268,7 +176,7 @@ BEGIN
     /*  Getting the OID of the table. We will make remaining code in this function independent of parameters passed.
         For ex: when schema passed is null
         This sql statement is also used in many routines below */
-    SELECT dbms_metadata.get_object_oid('TABLE', p_schema, p_table) INTO l_oid;
+    SELECT dbms_metadata.get_object_oid('TABLE', schema_name, table_name) INTO l_oid;
 
     /*  We will get schema and object names so that we will not depend on parameters passed.
         For ex: when schema passed is null
@@ -412,10 +320,10 @@ BEGIN
     RETURN l_return;
 EXCEPTION
     WHEN NO_DATA_FOUND THEN
-        IF p_schema IS NULL THEN
-            RAISE EXCEPTION 'Table with name % not found. Please provide schema name.', p_table;
+        IF schema_name IS NULL THEN
+            RAISE EXCEPTION 'Table with name % not found. Please provide schema name.', table_name;
         ELSE
-            RAISE EXCEPTION 'Table with name % not found in schema %', p_table, p_schema;
+            RAISE EXCEPTION 'Table with name % not found in schema %', table_name, schema_name;
         END IF;
 END;
 $$
@@ -425,10 +333,7 @@ COMMENT ON FUNCTION dbms_metadata.get_table_ddl (text, text) IS 'This function r
 
 REVOKE ALL ON FUNCTION dbms_metadata.get_table_ddl FROM PUBLIC;
 
-----
--- DBMS_METADATA.GET_VIEW_DDL
-----
-CREATE OR REPLACE FUNCTION dbms_metadata.get_view_ddl (view_schema text, view_name text)
+CREATE OR REPLACE FUNCTION dbms_metadata.get_view_ddl (schema_name text, view_name text)
     RETURNS text
     AS $$
 DECLARE
@@ -445,7 +350,7 @@ BEGIN
     -- Getting values of transform params
     SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
 
-    SELECT dbms_metadata.get_object_oid('VIEW', view_schema, view_name) INTO l_oid;
+    SELECT dbms_metadata.get_object_oid('VIEW', schema_name, view_name) INTO l_oid;
 
     SELECT n.nspname, c.relname INTO STRICT l_schema_name, l_view_name
     FROM pg_class c
@@ -456,7 +361,7 @@ BEGIN
     SELECT 'CREATE VIEW ' || quote_ident(l_schema_name) || '.' || quote_ident(l_view_name) || ' AS ' || pg_get_viewdef(l_oid) INTO STRICT l_return;
 
     IF l_return IS NULL THEN
-        RAISE EXCEPTION 'View % not found in schema %', view_name, view_schema;
+        RAISE EXCEPTION 'View % not found in schema %', view_name, schema_name;
     END IF;
 
     IF NOT l_sqlterminator_guc THEN
@@ -465,10 +370,10 @@ BEGIN
     RETURN l_return;
 EXCEPTION
     WHEN NO_DATA_FOUND THEN
-        IF view_schema IS NULL THEN
+        IF schema_name IS NULL THEN
             RAISE EXCEPTION 'View with name % not found. Please provide schema name.', view_name;
         ELSE
-            RAISE EXCEPTION 'View with name % not found in schema %', view_name, view_schema;
+            RAISE EXCEPTION 'View with name % not found in schema %', view_name, schema_name;
         END IF;
 END;
 $$
@@ -478,10 +383,7 @@ COMMENT ON FUNCTION dbms_metadata.get_view_ddl (text, text) IS 'This function re
 
 REVOKE ALL ON FUNCTION dbms_metadata.get_view_ddl FROM PUBLIC;
 
-----
--- DBMS_METADATA.GET_SEQUENCE_DDL
-----
-CREATE OR REPLACE FUNCTION dbms_metadata.get_sequence_ddl (p_schema text, p_sequence text)
+CREATE OR REPLACE FUNCTION dbms_metadata.get_sequence_ddl (schema_name text, sequence_name text)
     RETURNS text
     AS $$
 DECLARE
@@ -495,7 +397,7 @@ BEGIN
     -- Getting values of transform params
     SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
 
-    SELECT dbms_metadata.get_object_oid('SEQUENCE', p_schema, p_sequence) INTO STRICT l_oid;
+    SELECT dbms_metadata.get_object_oid('SEQUENCE', schema_name, sequence_name) INTO STRICT l_oid;
 
     SELECT
         'CREATE SEQUENCE ' || quote_ident(s.schemaname) || '.' || quote_ident(s.sequencename) || ' START WITH ' || start_value || ' INCREMENT BY ' || increment_by || ' MINVALUE ' || min_value || ' MAXVALUE ' || max_value || ' CACHE ' || cache_size || ' ' || CASE WHEN CYCLE IS TRUE THEN
@@ -513,10 +415,10 @@ BEGIN
     RETURN l_return;
 EXCEPTION
     WHEN NO_DATA_FOUND THEN
-        IF p_schema IS NULL THEN
-            RAISE EXCEPTION 'Sequence with name % not found. Please provide schema name.', p_sequence;
+        IF schema_name IS NULL THEN
+            RAISE EXCEPTION 'Sequence with name % not found. Please provide schema name.', sequence_name;
         ELSE
-            RAISE EXCEPTION 'Sequence with name % not found in schema %', p_sequence, p_schema;
+            RAISE EXCEPTION 'Sequence with name % not found in schema %', sequence_name, schema_name;
         END IF;
 END;
 $$
@@ -526,9 +428,6 @@ COMMENT ON FUNCTION dbms_metadata.get_sequence_ddl (text, text) IS 'This functio
 
 REVOKE ALL ON FUNCTION dbms_metadata.get_sequence_ddl FROM PUBLIC;
 
-----
--- DBMS_METADATA.GET_ROUTINE_DDL
-----
 CREATE OR REPLACE FUNCTION dbms_metadata.get_routine_ddl (schema_name text, routine_name text, routine_type text DEFAULT 'procedure')
     RETURNS text
     AS $$
@@ -625,9 +524,6 @@ COMMENT ON FUNCTION dbms_metadata.get_routine_ddl (text, text, text) IS 'This fu
 
 REVOKE ALL ON FUNCTION dbms_metadata.get_routine_ddl FROM PUBLIC;
 
-----
--- DBMS_METADATA.GET_INDEX_DDL
-----
 CREATE OR REPLACE FUNCTION dbms_metadata.get_index_ddl(schema_name text, index_name text)
 RETURNS text AS
 $$
@@ -671,9 +567,6 @@ COMMENT ON FUNCTION dbms_metadata.get_index_ddl (text, text) IS 'This function r
 
 REVOKE ALL ON FUNCTION dbms_metadata.get_index_ddl FROM PUBLIC;
 
-----
--- DBMS_METADATA.GET_CONSTRAINT_DDL
-----
 CREATE OR REPLACE FUNCTION dbms_metadata.get_constraint_ddl(schema_name text, constraint_name text)
 RETURNS text AS
 $$
@@ -719,9 +612,6 @@ COMMENT ON FUNCTION dbms_metadata.get_constraint_ddl (text, text) IS 'This funct
 
 REVOKE ALL ON FUNCTION dbms_metadata.get_constraint_ddl FROM PUBLIC;
 
-----
--- DBMS_METADATA.GET_CHECK_CONSTRAINT_DDL
-----
 CREATE OR REPLACE FUNCTION dbms_metadata.get_check_constraint_ddl(schema_name text, constraint_name text)
 RETURNS text AS
 $$
@@ -767,9 +657,6 @@ COMMENT ON FUNCTION dbms_metadata.get_check_constraint_ddl (text, text) IS 'This
 
 REVOKE ALL ON FUNCTION dbms_metadata.get_check_constraint_ddl FROM PUBLIC;
 
-----
--- DBMS_METADATA.GET_REF_CONSTRAINT_DDL
-----
 CREATE OR REPLACE FUNCTION dbms_metadata.get_ref_constraint_ddl(schema_name text, constraint_name text)
 RETURNS text AS
 $$
@@ -814,9 +701,6 @@ COMMENT ON FUNCTION dbms_metadata.get_ref_constraint_ddl (text, text) IS 'This f
 
 REVOKE ALL ON FUNCTION dbms_metadata.get_ref_constraint_ddl FROM PUBLIC;
 
-----
--- DBMS_METADATA.GET_TRIGGER_DDL
-----
 CREATE OR REPLACE FUNCTION dbms_metadata.get_trigger_ddl(schema_name text, trigger_name text)
 RETURNS text AS
 $$
@@ -861,7 +745,7 @@ COMMENT ON FUNCTION dbms_metadata.get_trigger_ddl (text, text) IS 'This function
 
 REVOKE ALL ON FUNCTION dbms_metadata.get_trigger_ddl FROM PUBLIC;
 
-CREATE OR REPLACE FUNCTION dbms_metadata.get_type_ddl(p_schema_name text, p_type_name text)
+CREATE OR REPLACE FUNCTION dbms_metadata.get_type_ddl(schema_name text, type_name text)
 RETURNS text AS $$
 DECLARE
     l_oid oid;
@@ -878,7 +762,7 @@ BEGIN
     -- Getting values of transform params
     SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
 
-    SELECT dbms_metadata.get_object_oid('TYPE', p_schema_name, p_type_name) INTO l_oid;
+    SELECT dbms_metadata.get_object_oid('TYPE', schema_name, type_name) INTO l_oid;
 
     SELECT n.nspname, c.relname INTO STRICT l_schema_name, l_type_name
     FROM pg_class c
@@ -900,7 +784,7 @@ BEGIN
 
     -- Construct the CREATE TYPE statement
     IF l_attribute_list IS NULL THEN
-        RAISE EXCEPTION 'Type % does not exist in schema %.', p_type_name, p_schema_name;
+        RAISE EXCEPTION 'Type % does not exist in schema %.', type_name, schema_name;
     ELSE
         l_attribute_list := TRIM(TRAILING ',' FROM l_attribute_list);
         l_create_statement := concat('CREATE TYPE ', quote_ident(l_schema_name), '.', quote_ident(l_type_name), ' AS (', l_attribute_list, ')');
@@ -912,10 +796,10 @@ BEGIN
     RETURN l_create_statement;
 EXCEPTION
     WHEN NO_DATA_FOUND THEN
-        IF p_schema IS NULL THEN
-            RAISE EXCEPTION 'Type % does not exist. Please provide schema name.', p_type_name;
+        IF schema_name IS NULL THEN
+            RAISE EXCEPTION 'Type % does not exist. Please provide schema name.', type_name;
         ELSE
-            RAISE EXCEPTION 'Type % does not exist in schema %', p_type_name, p_schema;
+            RAISE EXCEPTION 'Type % does not exist in schema %', type_name, schema_name;
         END IF;
 END;
 $$ LANGUAGE plpgsql;
@@ -977,14 +861,7 @@ COMMENT ON FUNCTION dbms_metadata.get_enum_ddl (text, text) IS 'This function re
 
 REVOKE ALL ON FUNCTION dbms_metadata.get_enum_ddl FROM PUBLIC;
 
-------------------------------------------------------------------------------
--- DBMS_METADATA.GET_DEPENDENT_DDL utility functions
-------------------------------------------------------------------------------
-
-----
--- DBMS_METADATA.GET_SEQUENCE_DDL_OF_TABLE
-----
-CREATE OR REPLACE FUNCTION dbms_metadata.get_sequence_ddl_of_table (p_schema text, p_table text)
+CREATE OR REPLACE FUNCTION dbms_metadata.get_sequence_ddl_of_table (schema_name text, table_name text)
     RETURNS text
     AS $$
 DECLARE
@@ -1000,7 +877,7 @@ BEGIN
     -- Getting values of transform params
     SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
 
-    SELECT dbms_metadata.get_object_oid('TABLE', p_schema, p_table) INTO l_oid;
+    SELECT dbms_metadata.get_object_oid('TABLE', schema_name, table_name) INTO l_oid;
 
     -- Get the CREATE SEQUENCE statements
     --     for all the sequences belonging to the table
@@ -1052,12 +929,9 @@ COMMENT ON FUNCTION dbms_metadata.get_sequence_ddl_of_table (text, text) IS 'Thi
 
 REVOKE ALL ON FUNCTION dbms_metadata.get_sequence_ddl_of_table FROM PUBLIC;
 
-----
--- DBMS_METADATA.GET_CONSTRAINTS_DDL_OF_TABLE
-----
 CREATE OR REPLACE FUNCTION dbms_metadata.get_constraints_ddl_of_table (
-    p_schema text,
-    p_table text
+    schema_name text,
+    table_name text
 ) RETURNS text
     AS $$
 DECLARE
@@ -1078,7 +952,7 @@ BEGIN
     SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
 
     -- Getting the OID of the table
-    SELECT dbms_metadata.get_object_oid('TABLE', p_schema, p_table) INTO l_oid;
+    SELECT dbms_metadata.get_object_oid('TABLE', schema_name, table_name) INTO l_oid;
 
     SELECT n.nspname, c.relname INTO STRICT l_schema_name, l_table_name
     FROM pg_class c
@@ -1145,10 +1019,10 @@ BEGIN
     RETURN l_return;
 EXCEPTION
     WHEN NO_DATA_FOUND THEN
-        IF p_schema IS NULL THEN
-            RAISE EXCEPTION 'Table with name % not found. Please provide schema name.', p_table;
+        IF schema_name IS NULL THEN
+            RAISE EXCEPTION 'Table with name % not found. Please provide schema name.', table_name;
         ELSE
-            RAISE EXCEPTION 'Table with name % not found in schema %', p_table, p_schema;
+            RAISE EXCEPTION 'Table with name % not found in schema %', table_name, schema_name;
         END IF;
 END;
 $$
@@ -1158,12 +1032,9 @@ COMMENT ON FUNCTION dbms_metadata.get_constraints_ddl_of_table (text, text) IS '
 
 REVOKE ALL ON FUNCTION dbms_metadata.get_constraints_ddl_of_table FROM PUBLIC;
 
-----
--- DBMS_METADATA.GET_REF_CONSTRAINTS_DDL_OF_TABLE
-----
 CREATE OR REPLACE FUNCTION dbms_metadata.get_ref_constraints_ddl_of_table (
-    p_schema text,
-    p_table text
+    schema_name text,
+    table_name text
 ) RETURNS text
     AS $$
 DECLARE
@@ -1181,7 +1052,7 @@ BEGIN
     SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
 
     -- Getting the OID of the table
-    SELECT dbms_metadata.get_object_oid('TABLE', p_schema, p_table) INTO l_oid;
+    SELECT dbms_metadata.get_object_oid('TABLE', schema_name, table_name) INTO l_oid;
 
     FOR l_fkey_rec IN (
         SELECT
@@ -1218,10 +1089,7 @@ COMMENT ON FUNCTION dbms_metadata.get_ref_constraints_ddl_of_table (text, text) 
 
 REVOKE ALL ON FUNCTION dbms_metadata.get_ref_constraints_ddl_of_table FROM PUBLIC;
 
-----
--- DBMS_METADATA.GET_INDEXES_DDL_OF_TABLE
-----
-CREATE OR REPLACE FUNCTION dbms_metadata.get_indexes_ddl_of_table (p_schema text, p_table text)
+CREATE OR REPLACE FUNCTION dbms_metadata.get_indexes_ddl_of_table (schema_name text, table_name text)
     RETURNS text
     AS $$
 DECLARE
@@ -1238,7 +1106,7 @@ BEGIN
     SELECT current_setting('DBMS_METADATA.SQLTERMINATOR')::boolean INTO l_sqlterminator_guc;
 
     -- Getting the OID of the table
-    SELECT dbms_metadata.get_object_oid('TABLE', p_schema, p_table) INTO l_oid;
+    SELECT dbms_metadata.get_object_oid('TABLE', schema_name, table_name) INTO l_oid;
 
     -- Get Index Definitions
     FOR l_const_rec IN (
@@ -1291,9 +1159,6 @@ COMMENT ON FUNCTION dbms_metadata.get_indexes_ddl_of_table (text, text) IS 'This
 
 REVOKE ALL ON FUNCTION dbms_metadata.get_indexes_ddl_of_table FROM PUBLIC;
 
-----
--- DBMS_METADATA.GET_TRIGGERS_DDL_OF_TABLE
-----
 CREATE OR REPLACE FUNCTION dbms_metadata.get_triggers_ddl_of_table(schema_name text, table_name text)
 RETURNS text AS
 $$
@@ -1336,9 +1201,6 @@ COMMENT ON FUNCTION dbms_metadata.get_triggers_ddl_of_table (text, text) IS 'Thi
 
 REVOKE ALL ON FUNCTION dbms_metadata.get_triggers_ddl_of_table FROM PUBLIC;
 
-----
--- DBMS_METADATA.GET_ENUMS_DDL_OF_TABLE
-----
 CREATE OR REPLACE FUNCTION dbms_metadata.get_enums_ddl_of_table(schema_name text, table_name text)
 RETURNS text AS
 $$
@@ -1397,14 +1259,7 @@ COMMENT ON FUNCTION dbms_metadata.get_enums_ddl_of_table (text, text) IS 'This f
 
 REVOKE ALL ON FUNCTION dbms_metadata.get_enums_ddl_of_table FROM PUBLIC;
 
-------------------------------------------------------------------------------
--- DBMS_METADATA.GET_GRANTED_DDL utility functions
-------------------------------------------------------------------------------
-
-----
--- DBMS_METADATA.GET_GRANTED_ROLES_DDL
-----
-CREATE OR REPLACE FUNCTION dbms_metadata.get_granted_roles_ddl(p_grantee text)
+CREATE OR REPLACE FUNCTION dbms_metadata.get_granted_roles_ddl(grantee text)
 RETURNS text AS $$
 DECLARE
     l_grant_statements text;
@@ -1422,13 +1277,13 @@ BEGIN
         FROM pg_roles r
         JOIN pg_auth_members m ON r.oid = m.roleid
         JOIN pg_roles u ON m.member = u.oid
-        WHERE u.rolname = p_grantee
+        WHERE u.rolname = grantee
         ORDER BY r.rolname
     LOOP
-        l_grant_statements := concat(l_grant_statements, 'GRANT ', quote_ident(l_role_info.role_name), ' TO ', quote_ident(p_grantee), CASE l_sqlterminator_guc WHEN TRUE THEN ';' ELSE '' END, E'\n');
+        l_grant_statements := concat(l_grant_statements, 'GRANT ', quote_ident(l_role_info.role_name), ' TO ', quote_ident(grantee), CASE l_sqlterminator_guc WHEN TRUE THEN ';' ELSE '' END, E'\n');
     END LOOP;
     IF l_grant_statements IS NULL THEN
-        RAISE EXCEPTION 'role grant for grantee % not found', p_grantee;
+        RAISE EXCEPTION 'role grant for grantee % not found', grantee;
     END IF;
     RETURN l_grant_statements;
 END;
@@ -1438,17 +1293,7 @@ COMMENT ON FUNCTION dbms_metadata.get_granted_roles_ddl (text) IS 'This function
 
 REVOKE ALL ON FUNCTION dbms_metadata.get_granted_roles_ddl FROM PUBLIC;
 
-------------------------------------------------------------------------------
--- Other Utility functions
-------------------------------------------------------------------------------
-
-----
--- DBMS_METADATA.GET_OBJECT_OID
-----
-/*  This function may not return OID of given object type sometimes. For example if TABLE is passed as object_type,
-    but actually there is no table with that name, but there is a view. This function will then return oid of the view.
-    So object type check must be done after fetting oid from this function. */
-CREATE OR REPLACE FUNCTION dbms_metadata.get_object_oid(p_object_type text, p_schema text, p_object_name text)
+CREATE OR REPLACE FUNCTION dbms_metadata.get_object_oid(object_type text, schema_name text, object_name text)
 RETURNS oid AS $$
 DECLARE
     l_oid oid;
@@ -1457,44 +1302,44 @@ DECLARE
     l_pg_proc_objs text[] := ARRAY['PROCEDURE', 'FUNCTION'];
     l_pg_type_objs text[] := ARRAY['ENUM'];
 BEGIN
-    IF p_schema IS NOT NULL THEN
-        SELECT dbms_metadata.get_schema_oid(p_schema) INTO l_schema_oid;
+    IF schema_name IS NOT NULL THEN
+        SELECT dbms_metadata.get_schema_oid(schema_name) INTO l_schema_oid;
     END IF;
 
-    IF p_object_type = ANY(l_pg_class_objs) THEN
-        IF p_schema IS NULL THEN
-            SELECT quote_ident(p_object_name)::regclass::oid INTO STRICT l_oid;
+    IF object_type = ANY(l_pg_class_objs) THEN
+        IF schema_name IS NULL THEN
+            SELECT quote_ident(object_name)::regclass::oid INTO STRICT l_oid;
         ELSE
             SELECT
                 oid INTO STRICT l_oid
             FROM
                 pg_class
             WHERE
-                relname = p_object_name
+                relname = object_name
                 AND relnamespace = l_schema_oid;
         END IF;
-    ELSIF p_object_type = ANY(l_pg_proc_objs) THEN
-        IF p_schema IS NULL THEN
-            SELECT quote_ident(p_object_name)::regproc::oid INTO STRICT l_oid;
+    ELSIF object_type = ANY(l_pg_proc_objs) THEN
+        IF schema_name IS NULL THEN
+            SELECT quote_ident(object_name)::regproc::oid INTO STRICT l_oid;
         ELSE
             SELECT
                 oid INTO STRICT l_oid
             FROM
                 pg_proc
             WHERE
-                proname = p_object_name
+                proname = object_name
                 AND pronamespace = l_schema_oid;
         END IF;
-    ELSIF p_object_type = ANY(l_pg_type_objs) THEN
-        IF p_schema IS NULL THEN
-            SELECT quote_ident(p_object_name)::regtype::oid INTO STRICT l_oid;
+    ELSIF object_type = ANY(l_pg_type_objs) THEN
+        IF schema_name IS NULL THEN
+            SELECT quote_ident(object_name)::regtype::oid INTO STRICT l_oid;
         ELSE
             SELECT
                 oid INTO STRICT l_oid
             FROM
                 pg_type
             WHERE
-                typname = p_object_name
+                typname = object_name
                 AND typnamespace = l_schema_oid;
         END IF;
     END IF;
@@ -1502,7 +1347,7 @@ BEGIN
     RETURN l_oid;
 EXCEPTION
     WHEN NO_DATA_FOUND THEN
-        RAISE EXCEPTION '% % does not exist in schema %', p_object_type, p_object_name, p_schema;
+        RAISE EXCEPTION '% % does not exist in schema %', object_type, object_name, schema_name;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -1510,10 +1355,7 @@ COMMENT ON FUNCTION dbms_metadata.get_object_oid (text, text, text) IS 'This fun
 
 REVOKE ALL ON FUNCTION dbms_metadata.get_object_oid FROM PUBLIC;
 
-----
--- DBMS_METADATA.GET_SCHEMA_OID
-----
-CREATE OR REPLACE FUNCTION dbms_metadata.get_schema_oid(p_schema text)
+CREATE OR REPLACE FUNCTION dbms_metadata.get_schema_oid(schema_name text)
 RETURNS oid AS $$
 DECLARE
     l_schema_oid oid;
@@ -1524,12 +1366,12 @@ BEGIN
     FROM
         pg_namespace
     WHERE
-        nspname = p_schema;
+        nspname = schema_name;
 
     RETURN l_schema_oid;
 EXCEPTION
     WHEN NO_DATA_FOUND THEN
-        RAISE EXCEPTION 'Schema % does not exist', p_schema;
+        RAISE EXCEPTION 'Schema % does not exist', schema_name;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -1537,8 +1379,7 @@ COMMENT ON FUNCTION dbms_metadata.get_schema_oid (text) IS 'This function return
 
 REVOKE ALL ON FUNCTION dbms_metadata.get_schema_oid FROM PUBLIC;
 
-------------------------------------------------------------------------------
--- GRANTS
-------------------------------------------------------------------------------
-GRANT USAGE ON SCHEMA dbms_metadata TO PUBLIC;
+----
+-- Restore the privileges set at extension creation
+----
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA dbms_metadata TO PUBLIC;
