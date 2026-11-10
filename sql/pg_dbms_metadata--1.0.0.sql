@@ -893,12 +893,18 @@ BEGIN
 
     SELECT dbms_metadata.get_object_oid('ENUM', schema_name, enum_name) INTO l_oid;
 
+    -- Qualify the enum with its schema when a schema is provided so that the
+    -- output does not depend on the search_path; otherwise use format_type().
     WITH enum_values AS (
     SELECT
-        format_type(e.enumtypid, -1) AS enumname,
+        CASE WHEN schema_name IS NULL THEN format_type(t.oid, -1)
+             ELSE quote_ident(n.nspname) || '.' || quote_ident(t.typname)
+        END AS enumname,
         string_agg(quote_literal(e.enumlabel), ', ' ORDER BY e.enumsortorder) AS enumvalues
     FROM
         pg_enum e
+        INNER JOIN pg_type t ON t.oid = e.enumtypid
+        INNER JOIN pg_namespace n ON n.oid = t.typnamespace
     WHERE
         e.enumtypid = l_oid
     GROUP BY enumname
@@ -913,10 +919,10 @@ BEGIN
     RETURN l_create_statement;
 EXCEPTION
     WHEN NO_DATA_FOUND THEN
-        IF p_schema IS NULL THEN
-            RAISE EXCEPTION 'Enum % does not exist. Please provide schema name.', p_type_name;
+        IF schema_name IS NULL THEN
+            RAISE EXCEPTION 'Enum % does not exist. Please provide schema name.', enum_name;
         ELSE
-            RAISE EXCEPTION 'Enum % does not exist in schema %', p_type_name, p_schema;
+            RAISE EXCEPTION 'Enum % does not exist in schema %', enum_name, schema_name;
         END IF;
 END;
 $$ LANGUAGE plpgsql;
@@ -1306,13 +1312,19 @@ BEGIN
     SELECT dbms_metadata.get_object_oid('TABLE', schema_name, table_name) INTO l_oid;
 
     FOR enum_def IN
+        -- Qualify each enum with its own schema when a schema is provided so
+        -- that the output does not depend on the search_path.
         WITH tabenum AS (
         SELECT
-            format_type(a.atttypid, a.atttypmod) AS enumname,
+            CASE WHEN schema_name IS NULL THEN format_type(a.atttypid, a.atttypmod)
+                 ELSE quote_ident(n.nspname) || '.' || quote_ident(t.typname)
+            END AS enumname,
             string_agg(quote_literal(e.enumlabel), ', ' ORDER BY e.enumsortorder) AS enumvalues
         FROM
             pg_attribute a
             INNER JOIN pg_enum e ON a.atttypid = e.enumtypid
+            INNER JOIN pg_type t ON t.oid = a.atttypid
+            INNER JOIN pg_namespace n ON n.oid = t.typnamespace
         WHERE
             a.attname NOT IN ('tableoid', 'cmax', 'xmax', 'cmin', 'xmin', 'ctid')
             AND NOT attisdropped

@@ -349,9 +349,9 @@ SELECT dbms_metadata.get_ddl('TYPE','location');
 -- Test enum DDL export
 \i test/sql/get_ddl/get_ddl_enum.sql
 SELECT dbms_metadata.get_ddl('ENUM','enum_abc','gdmmm');
-                   get_ddl                    
-----------------------------------------------
- CREATE TYPE enum_abc AS ENUM ('a', 'b', 'c')
+                      get_ddl                       
+----------------------------------------------------
+ CREATE TYPE gdmmm.enum_abc AS ENUM ('a', 'b', 'c')
 (1 row)
 
 -- tests for schema as NULL
