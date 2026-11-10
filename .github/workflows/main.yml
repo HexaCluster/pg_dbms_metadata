@@ -1,0 +1,33 @@
+name: Regression tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        pg: [19, 18, 17, 16, 15, 14, 13, 12]
+    name: PostgreSQL ${{ matrix.pg }}
+    runs-on: ubuntu-latest
+    container: pgxn/pgxn-tools
+    steps:
+      - name: Start PostgreSQL ${{ matrix.pg }}
+        run: pg-start ${{ matrix.pg }}
+      - name: Check out the repository
+        uses: actions/checkout@v4
+      - name: Build, install and run regression tests
+        run: pg-build-test
+      - name: Upload regression diffs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: regression-pg${{ matrix.pg }}
+          path: |
+            regression.diffs
+            regression.out
+            results/
+          if-no-files-found: ignore
